@@ -55,12 +55,6 @@ build: deps generate fmt vet ## Build manager binary.
 run: generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-#.PHONY: run
-#run: manifests generate fmt vet certificates ktunnel ## Run a controller from your host.
-#	$(KTUNNEL) inject deployment odh-project-controller-ktunnel \
-#		$(WEBHOOK_PORT) --eject=false --namespace $(K8S_NAMESPACE) &
-#	go run ./main.go
-
 ##@ Container images
 
 CONTAINER_ENGINE ?= podman
