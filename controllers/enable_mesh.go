@@ -28,11 +28,9 @@ import (
 	maistrav1 "maistra.io/api/core/v1"
 )
 
-const AnnotationServiceMesh = "opendatahub.io/service-mesh"
-
 // Reconcile will manage the creation, update and deletion of the MeshMember for created namespace
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
-	log := r.Log.WithValues("namespace", ns.Name)
+	log := r.Log.WithValues("feature", "mesh", "namespace", ns.Name)
 
 	if serviceMeshIsNotEnabled(ns.ObjectMeta) {
 		log.Info("Not adding namespace to the mesh. It's not requested for the project")

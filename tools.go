@@ -5,7 +5,6 @@ package tools
 
 // nolint
 import (
-	_ "github.com/kuadrant/authorino"
 	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "github.com/onsi/ginkgo/v2/ginkgo/generators"
 	_ "k8s.io/code-generator"

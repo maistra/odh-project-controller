@@ -21,9 +21,15 @@ import (
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/errors"
 	maistrav1 "maistra.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	AnnotationServiceMesh = "opendatahub.io/service-mesh"
+	AnnotationHubURL      = "opendatahub.io/hub-url"
 )
 
 // OpenshiftServiceMeshReconciler holds the controller configuration.
@@ -41,6 +47,8 @@ type OpenshiftServiceMeshReconciler struct {
 func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 
+	reconcilers := []reconcileFunc{r.reconcileMeshMember, r.reconcileAuthConfig}
+
 	ns := &v1.Namespace{}
 	err := r.Get(ctx, req.NamespacedName, ns)
 	if err != nil {
@@ -51,7 +59,12 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, r.reconcileMeshMember(ctx, ns)
+	errs := make([]error, len(reconcilers))
+	for _, reconciler := range reconcilers {
+		errs = append(errs, reconciler(ctx, ns))
+	}
+
+	return ctrl.Result{}, errors.NewAggregate(errs)
 }
 
 func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {

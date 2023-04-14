@@ -13,14 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers // TODO this should be _test package
+package controllers_test
 
 import (
 	"bytes"
 	"context"
 	"github.com/manifestival/manifestival"
+	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	maistramanifests "maistra.io/api/manifests"
 	"path/filepath"
@@ -39,13 +41,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
-// +kubebuilder:docs-gen:collapse=Imports
 
 var (
 	cli     client.Client
@@ -73,6 +72,7 @@ var _ = BeforeSuite(func() {
 	By("Bootstrapping k8s test environment")
 	envTest = &envtest.Environment{
 		CRDInstallOptions: envtest.CRDInstallOptions{
+			Scheme:             testScheme,
 			CRDs:               loadCRDs(),
 			Paths:              []string{filepath.Join("..", "config", "crd", "external")},
 			ErrorIfPathMissing: true,
@@ -84,9 +84,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	RegisterSchemes(testScheme)
-
-	//+kubebuilder:scaffold:scheme
+	controllers.RegisterSchemes(testScheme)
+	utilruntime.Must(v1.AddToScheme(testScheme))
 
 	cli, err = client.New(cfg, client.Options{Scheme: testScheme})
 	Expect(err).NotTo(HaveOccurred())
@@ -99,7 +98,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&OpenshiftServiceMeshReconciler{
+	err = (&controllers.OpenshiftServiceMeshReconciler{
 		Client: cli,
 		Log:    ctrl.Log.WithName("controllers").WithName("project-controller"),
 		Scheme: mgr.GetScheme(),
@@ -135,7 +134,9 @@ func convertToStructuredResource(yamlContent []byte, out interface{}, opts ...ma
 		return err
 	}
 
-	err = scheme.Scheme.Convert(&m.Resources()[0], out, nil)
+	s := scheme.Scheme
+	controllers.RegisterSchemes(s)
+	err = s.Convert(&m.Resources()[0], out, nil)
 	if err != nil {
 		return err
 	}
