@@ -24,6 +24,7 @@ help: ## Display this help.
 .PHONY: generate
 generate: tools ## Generates required resources for the controller to work properly (see config/ folder)
 	controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(call fetch-external-crds,"github.com/kuadrant/authorino","api/v1beta1")
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
