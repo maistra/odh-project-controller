@@ -19,7 +19,8 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/openshift/api/project/v1"
+	v1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	maistrav1 "maistra.io/api/core/v1"
@@ -27,14 +28,24 @@ import (
 	"time"
 )
 
-var _ = When("Openshift project is created", func() {
+const (
+	duration = 1 * time.Minute
+	interval = 250 * time.Millisecond
+)
+
+var _ = When("Namespace is created", func() {
+
+	var testNs *v1.Namespace
+
+	AfterEach(func() {
+		Expect(cli.Delete(context.Background(), testNs)).To(Succeed())
+	})
 
 	It("should register it in the mesh if annotation is present", func() {
 		// given
-		project := &v1.Project{
+		testNs = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "meshified-project",
-				Namespace: WorkingNamespace,
+				Name: "meshified-ns",
 				Annotations: map[string]string{
 					AnnotationServiceMesh: "true",
 				},
@@ -42,45 +53,44 @@ var _ = When("Openshift project is created", func() {
 		}
 
 		// when
-		Expect(cli.Create(context.Background(), project)).To(Succeed())
+		Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
 		// then
 		By("creating service mesh member object in the namespace", func() {
 			member := &maistrav1.ServiceMeshMember{}
 			namespacedName := types.NamespacedName{
-				Namespace: project.Namespace,
-				Name:      WorkingNamespace,
+				Namespace: testNs.Name,
+				Name:      "default",
 			}
 			Eventually(func() error {
 				return cli.Get(context.Background(), namespacedName, member)
 			}).
-				WithTimeout(1 * time.Minute).
-				WithPolling(250 * time.Millisecond).
+				WithTimeout(duration).
+				WithPolling(interval).
 				Should(Succeed())
 		})
 	})
 
 	It("should not register it in the mesh if annotation is not present", func() {
 		// given
-		project := &v1.Project{
+		testNs = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "not-meshified-project",
-				Namespace: WorkingNamespace,
+				Name: "not-meshified-namespace",
 			},
 		}
 
 		// when
-		Expect(cli.Create(context.Background(), project)).To(Succeed())
+		Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
 		// then
 		By("ensuring no service mesh member created", func() {
 			members := &maistrav1.ServiceMeshMemberList{}
 
 			Eventually(func() error {
-				return cli.List(context.Background(), members, client.InNamespace(WorkingNamespace))
+				return cli.List(context.Background(), members, client.InNamespace(testNs.Name))
 			}).
-				WithTimeout(1 * time.Minute).
-				WithPolling(250 * time.Millisecond).
+				WithTimeout(duration).
+				WithPolling(interval).
 				Should(Succeed())
 
 			Expect(members.Items).Should(BeEmpty())

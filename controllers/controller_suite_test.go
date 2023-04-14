@@ -19,11 +19,9 @@ import (
 	"bytes"
 	"context"
 	"github.com/manifestival/manifestival"
-	projectv1 "github.com/openshift/api/project/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	maistrav1 "maistra.io/api/core/v1"
 	maistramanifests "maistra.io/api/manifests"
 	"path/filepath"
 	"testing"
@@ -57,10 +55,6 @@ var (
 )
 
 var testScheme = runtime.NewScheme()
-
-const (
-	WorkingNamespace = "default"
-)
 
 func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -124,14 +118,6 @@ var _ = AfterSuite(func() {
 	Expect(envTest.Stop()).To(Succeed())
 })
 
-// Cleanup resources to not contaminate between tests
-var _ = AfterEach(func() {
-	inNamespace := client.InNamespace(WorkingNamespace)
-	Expect(cli.DeleteAllOf(context.TODO(), &projectv1.Project{}, inNamespace)).To(Succeed())
-	// TODO this should not be deleted manually
-	Expect(cli.DeleteAllOf(context.TODO(), &maistrav1.ServiceMeshMember{}, inNamespace)).To(Succeed())
-})
-
 func loadCRDs() []*v1.CustomResourceDefinition {
 	smmYaml, err := maistramanifests.ReadManifest("maistra.io_servicemeshmembers.yaml")
 	Expect(err).NotTo(HaveOccurred())
@@ -148,10 +134,7 @@ func convertToStructuredResource(yamlContent []byte, out interface{}, opts ...ma
 	if err != nil {
 		return err
 	}
-	m, err = m.Transform(mf.InjectNamespace(WorkingNamespace))
-	if err != nil {
-		return err
-	}
+
 	err = scheme.Scheme.Convert(&m.Resources()[0], out, nil)
 	if err != nil {
 		return err

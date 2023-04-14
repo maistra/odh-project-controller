@@ -18,7 +18,7 @@ package controllers
 import (
 	"context"
 	"github.com/go-logr/logr"
-	projectv1 "github.com/openshift/api/project/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	maistrav1 "maistra.io/api/core/v1"
@@ -40,16 +40,14 @@ type OpenshiftServiceMeshReconciler struct {
 // +kubebuilder:rbac:groups=maistra.io,resources=servicemeshmembers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=maistra.io,resources=servicemeshmembers/finalizers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=maistra.io,resources=servicemeshcontrolplanes,verbs=get;list;watch;create;update;patch;use
-// +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;watch;delete
 // +kubebuilder:rbac:groups="",resources=configmaps;namespaces;pods;services;serviceaccounts;secrets,verbs=get;list;watch;create;update;patch
 
 // Reconcile TODO yeah.
 func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 
-	project := &projectv1.Project{}
-	err := r.Get(ctx, req.NamespacedName, project)
+	ns := &v1.Namespace{}
+	err := r.Get(ctx, req.NamespacedName, ns)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			log.Info("Stopping reconciliation")
@@ -58,12 +56,12 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, r.reconcileMeshMember(ctx, project)
+	return ctrl.Result{}, r.reconcileMeshMember(ctx, ns)
 }
 
 func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&projectv1.Project{}).
+		For(&v1.Namespace{}).
 		Owns(&maistrav1.ServiceMeshMember{}).
 		Complete(r)
 }

@@ -36,19 +36,9 @@ help: ## Display this help.
 
 ##@ Development
 
-.PHONY: manifests
-manifests: controller-gen ## Generates required resources for the controller to work properly (see config/ folder)
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-
-OPENSHIFT_API_VERSION?=$(call go-mod-version,"openshift/api")
-external-manifests: controller-gen ## Generate CustomResourceDefinition objects for 3rd party APIs.
-    # Openshift CRDs
-	GOFLAGS="-mod=readonly" $(CONTROLLER_GEN) crd \
-		paths=${GOPATH}/pkg/mod/github.com/openshift/api@$(OPENSHIFT_API_VERSION)/project/v1/... \
-		output:crd:artifacts:config=config/crd/external
-
 .PHONY: generate
-generate: manifests external-manifests ## Generate resources needed for the controller
+generate: controller-gen ## Generates required resources for the controller to work properly (see config/ folder)
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -86,7 +76,7 @@ run: generate fmt vet ## Run a controller from your host.
 CONTAINER_ENGINE ?= podman
 
 .PHONY: docker-build
-docker-build: # test ## Build docker image with the manager.
+docker-build: test ## Build docker image with the manager.
 	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG}
 
 .PHONY: docker-push

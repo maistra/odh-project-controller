@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/openshift/api v0.0.0-20230213134911-7ba313770556 // corresponds to release-4.12 branch
 	go.uber.org/zap v1.24.0
+	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
@@ -79,7 +79,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect

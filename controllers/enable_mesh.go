@@ -17,7 +17,7 @@ package controllers
 
 import (
 	"context"
-	v1 "github.com/openshift/api/project/v1"
+	v1 "k8s.io/api/core/v1"
 	"reflect"
 	"strconv"
 
@@ -30,21 +30,21 @@ import (
 
 const AnnotationServiceMesh = "opendatahub.io/service-mesh"
 
-// Reconcile will manage the creation, update and deletion of the MeshMember for Openshift projects
-func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, project *v1.Project) error {
-	log := r.Log.WithValues("name", project.Name, "namespace", project.Namespace)
+// Reconcile will manage the creation, update and deletion of the MeshMember for created namespace
+func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
+	log := r.Log.WithValues("namespace", ns.Name)
 
-	if serviceMeshIsNotEnabled(project.ObjectMeta) {
-		log.Info("Not adding namespace to the mesh")
+	if serviceMeshIsNotEnabled(ns.ObjectMeta) {
+		log.Info("Not adding namespace to the mesh. It's not requested for the project")
 		return nil
 	}
 
-	desiredMeshMember := newServiceMeshMember(project)
+	desiredMeshMember := newServiceMeshMember(ns)
 	foundMember := &maistrav1.ServiceMeshMember{}
 	justCreated := false
 	err := r.Get(ctx, types.NamespacedName{
-		Name:      project.Name,
-		Namespace: project.Namespace,
+		Name:      desiredMeshMember.Name,
+		Namespace: ns.Name,
 	}, foundMember)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
@@ -67,7 +67,7 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if err := r.Get(ctx, types.NamespacedName{
 				Name:      desiredMeshMember.Name,
-				Namespace: project.Namespace,
+				Namespace: ns.Namespace,
 			}, foundMember); err != nil {
 				return err
 			}
@@ -84,13 +84,13 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 	return nil
 }
 
-func newServiceMeshMember(project *v1.Project) *maistrav1.ServiceMeshMember {
+func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 	return &maistrav1.ServiceMeshMember{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default", // The name MUST be default, per the maistra docs
-			Namespace: project.Namespace,
-			Labels:    map[string]string{"opendatahub.io/project": project.Name},
+			Namespace: ns.Name,
+			Labels:    map[string]string{"opendatahub.io/ns": ns.Name},
 		},
 		Spec: maistrav1.ServiceMeshMemberSpec{
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
