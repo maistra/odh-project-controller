@@ -76,7 +76,7 @@ run: generate fmt vet ## Run a controller from your host.
 CONTAINER_ENGINE ?= podman
 
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: ## Build docker image with the manager.
 	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG}
 
 .PHONY: docker-push
