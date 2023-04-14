@@ -12,7 +12,7 @@ ENVTEST_K8S_VERSION = 1.26
 SHELL = /usr/bin/env bash -o pipefail
 
 .PHONY: all
-all: test build
+all: tools test build
 
 ##@ General
 .PHONY: help
@@ -42,8 +42,12 @@ GOOS?=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 GOARCH?=$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/')
 GOBUILD:=GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
 
+.PHONY: deps
+deps:
+	go mod download && go mod tidy
+
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: deps generate fmt vet ## Build manager binary.
 	${GOBUILD} go build -o bin/manager main.go
 
 .PHONY: run
@@ -91,10 +95,10 @@ $(shell	mkdir -p $(LOCALBIN))
 PATH:=$(LOCALBIN):$(PATH)
 
 .PHONY: tools
-tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools
+tools: deps
+tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools in local ./bin folder
 tools: $(LOCALBIN)/setup-envtest $(LOCALBIN)/ginkgo
 
-## Tool Versions
 KUSTOMIZE_VERSION ?= v5.0.1
 $(LOCALBIN)/kustomize:
 	$(call header,"Installing $(notdir $@)")
@@ -111,8 +115,6 @@ $(LOCALBIN)/setup-envtest:
 	$(call header,"Installing $(notdir $@)")
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
-
 $(LOCALBIN)/ginkgo:
 	$(call header,"Installing $(notdir $@)")
 	GOBIN=$(LOCALBIN) go install -mod=readonly github.com/onsi/ginkgo/v2/ginkgo
-
