@@ -22,8 +22,8 @@ help: ## Display this help.
 ##@ Development
 
 .PHONY: generate
-generate: controller-gen ## Generates required resources for the controller to work properly (see config/ folder)
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+generate: tools ## Generates required resources for the controller to work properly (see config/ folder)
+	controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -34,8 +34,8 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+test: generate fmt vet ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" ginkgo -r -vet=off --junit-report=ginkgo-test-results.xml ${args}
 
 ##@ Build
 GOOS?=$(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -75,8 +75,8 @@ ifndef ignore-not-found
 endif
 
 .PHONY: deploy
-deploy: generate kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+deploy: generate ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && kustomize edit set image controller=${IMG}
 	kubectl apply -k config/base
 
 .PHONY: undeploy
@@ -87,31 +87,32 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 ## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
+$(shell	mkdir -p $(LOCALBIN))
+PATH:=$(LOCALBIN):$(PATH)
 
-## Tool Binaries
-KUSTOMIZE ?= $(LOCALBIN)/kustomize
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
+.PHONY: tools
+tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools
+tools: $(LOCALBIN)/setup-envtest $(LOCALBIN)/ginkgo
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.0.1
-
-.PHONY: kustomize
-kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
-$(KUSTOMIZE): $(LOCALBIN)
+$(LOCALBIN)/kustomize:
+	$(call header,"Installing $(notdir $@)")
 	wget -q -c https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_$(GOOS)_$(GOARCH).tar.gz -O /tmp/kustomize.tar.gz
 	tar xzvf /tmp/kustomize.tar.gz -C $(LOCALBIN)
-	chmod +x $(KUSTOMIZE)
+	chmod +x $(LOCALBIN)/kustomize
 
 CONTROLLER_TOOLS_VERSION?=$(call go-mod-version,'controller-tools')
-.PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION))
+$(LOCALBIN)/controller-gen:
+	$(call header,"Installing $(notdir $@)")
+	$(call go-get-tool,controller-gen,sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION))
 
-.PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
-$(ENVTEST): $(LOCALBIN)
+$(LOCALBIN)/setup-envtest:
+	$(call header,"Installing $(notdir $@)")
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+
+$(LOCALBIN)/ginkgo:
+	$(call header,"Installing $(notdir $@)")
+	GOBIN=$(LOCALBIN) go install -mod=readonly github.com/onsi/ginkgo/v2/ginkgo
+
