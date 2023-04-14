@@ -8,12 +8,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
   - namespaces
-  - pods
-  - secrets
-  - serviceaccounts
-  - services
   verbs:
   - create
   - get
@@ -37,42 +32,7 @@ rules:
   - maistra.io
   resources:
   - servicemeshmembers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - maistra.io
-  resources:
   - servicemeshmembers/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - networking.istio.io
-  resources:
-  - virtualservices
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - networking.istio.io
-  resources:
-  - virtualservices/finalizers
   verbs:
   - create
   - delete
