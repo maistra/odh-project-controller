@@ -27,7 +27,7 @@ ENVTEST_K8S_VERSION = 1.26
 SHELL = /usr/bin/env bash -o pipefail
 
 .PHONY: all
-all: build
+all: test build
 
 ##@ General
 .PHONY: help
