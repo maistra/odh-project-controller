@@ -69,13 +69,16 @@ run: generate fmt vet ## Run a controller from your host.
 ##@ Container images
 CONTAINER_ENGINE ?= podman
 
-.PHONY: image
-image: ## Build container image with the manager.
+.PHONY: docker-image
+docker-image: ## Build container image with the manager.
 	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG} ${DOCKER_ARGS}
 
-.PHONY: push-image
-push-image: image ## Push container image with the manager.
+.PHONY: docker-push
+docker-push: ## Push container image with the manager.
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
+
+.PHONY: docker-image
+image: docker-image docker-push ## Build and push docker image with the manager.
 
 ##@ Deployment
 
