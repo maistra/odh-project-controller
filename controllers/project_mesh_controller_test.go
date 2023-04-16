@@ -18,11 +18,12 @@ package controllers_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/onsi/gomega/format"
 	. "github.com/opendatahub-io/odh-project-controller/test/helpers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
-	"os"
-	"time"
 
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"

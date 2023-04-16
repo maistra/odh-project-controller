@@ -18,17 +18,18 @@ package controllers_test
 import (
 	"bytes"
 	"context"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/manifestival/manifestival"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	maistramanifests "maistra.io/api/manifests"
-	"path/filepath"
-	"testing"
-	"time"
 
 	mf "github.com/manifestival/manifestival"
 

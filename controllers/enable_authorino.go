@@ -2,14 +2,15 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+	"regexp"
+
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
-	"reflect"
-	"regexp"
 )
 
 type reconcileFunc func(ctx context.Context, ns *v1.Namespace) error

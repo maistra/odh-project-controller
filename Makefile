@@ -26,9 +26,11 @@ generate: tools ## Generates required resources for the controller to work prope
 	controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	$(call fetch-external-crds,github.com/kuadrant/authorino,api/v1beta1)
 
+SRC_DIRS:=./controllers ./test
+SRCS:=$(shell find ${SRC_DIRS} -name "*.go")
 .PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+fmt: $(SRCS) ## Formats the code.
+	goimports -l -w -e $(SRC_DIRS)
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -99,6 +101,7 @@ PATH:=$(LOCALBIN):$(PATH)
 tools: deps
 tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools in local ./bin folder
 tools: $(LOCALBIN)/setup-envtest $(LOCALBIN)/ginkgo
+tools: $(LOCALBIN)/goimports
 
 KUSTOMIZE_VERSION ?= v5.0.1
 $(LOCALBIN)/kustomize:
@@ -119,3 +122,7 @@ $(LOCALBIN)/setup-envtest:
 $(LOCALBIN)/ginkgo:
 	$(call header,"Installing $(notdir $@)")
 	GOBIN=$(LOCALBIN) go install -mod=readonly github.com/onsi/ginkgo/v2/ginkgo
+
+$(LOCALBIN)/goimports:
+	$(call header,"Installing goimports")
+	GOBIN=$(LOCALBIN) go install -mod=readonly golang.org/x/tools/cmd/goimports
