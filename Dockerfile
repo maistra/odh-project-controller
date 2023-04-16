@@ -14,8 +14,11 @@ COPY . /workspace/odh-project-controller
 
 WORKDIR /workspace/odh-project-controller
 
-# Build
-RUN make build
+# Allows to pass other targets, such as go-build.
+# go-build simply compiles the binary assuming all the prerequisites are provided.
+# You can e.g. call `make image -e DOCKER_ARGS="--build-arg BUILD_TARGET=go-build"`
+ARG BUILD_TARGET=build
+RUN make $BUILD_TARGET
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

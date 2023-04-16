@@ -56,7 +56,10 @@ deps:
 	go mod download && go mod tidy
 
 .PHONY: build
-build: deps generate fmt vet ## Build manager binary.
+build: deps generate fmt vet go-build ## Build manager binary.
+
+.PHONY: go-build
+go-build:
 	${GOBUILD} go build -o bin/manager main.go
 
 .PHONY: run
@@ -67,12 +70,12 @@ run: generate fmt vet ## Run a controller from your host.
 
 CONTAINER_ENGINE ?= podman
 
-.PHONY: docker-build
-docker-build: ## Build docker image with the manager.
-	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG}
+.PHONY: image
+image: ## Build container image with the manager.
+	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG} ${DOCKER_ARGS}
 
-.PHONY: docker-push
-docker-push: docker-build ## Push docker image with the manager.
+.PHONY: push-image
+push-image: image ## Push container image with the manager.
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
 
 ##@ Deployment
