@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
@@ -58,4 +59,10 @@ func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) erro
 		For(&v1.Namespace{}).
 		Owns(&maistrav1.ServiceMeshMember{}).
 		Complete(r)
+}
+
+var reservedNamespaceRegex = regexp.MustCompile(`^(openshift|istio-system)$|^(kube|openshift)-.*$`)
+
+func IsReservedNamespace(ns string) bool {
+	return reservedNamespaceRegex.MatchString(ns)
 }

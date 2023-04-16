@@ -24,9 +24,9 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 	}
 
 	desiredAuthConfig := r.createAuthConfig(ns)
-
 	foundAuthConfig := &authorino.AuthConfig{}
 	justCreated := false
+
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      desiredAuthConfig.Name,
 		Namespace: ns.Name,

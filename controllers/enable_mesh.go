@@ -18,8 +18,8 @@ import (
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "mesh", "namespace", ns.Name)
 
-	if serviceMeshIsNotEnabled(ns.ObjectMeta) {
-		log.Info("Not adding namespace to the mesh. It's not requested for the project")
+	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
+		log.Info("Skipped")
 		return nil
 	}
 
