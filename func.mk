@@ -6,6 +6,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
+echo "$(LOCALBIN)" ;\
 GOBIN=$(LOCALBIN) go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
@@ -18,7 +19,7 @@ endef
 # Using controller-gen to fetch external CRDs and put them in config/crd/external folder
 # They're used in tests, as they have to be created for controller to work
 define fetch-external-crds
-GOFLAGS="-mod=readonly" controller-gen crd \
+GOFLAGS="-mod=readonly" $(LOCALBIN)/controller-gen crd \
 paths=$(shell go env GOPATH)/pkg/mod/$(1)@$(call go-mod-version,$(1))/$(2)/... \
 output:crd:artifacts:config=config/crd/external
 endef

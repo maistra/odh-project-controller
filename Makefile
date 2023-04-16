@@ -23,14 +23,14 @@ help: ## Display this help.
 
 .PHONY: generate
 generate: tools ## Generates required resources for the controller to work properly (see config/ folder)
-	controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(LOCALBIN)/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	$(call fetch-external-crds,github.com/kuadrant/authorino,api/v1beta1)
 
 SRC_DIRS:=./controllers ./test
 SRCS:=$(shell find ${SRC_DIRS} -name "*.go")
 .PHONY: fmt
 fmt: $(SRCS) ## Formats the code.
-	goimports -l -w -e $(SRC_DIRS)
+	$(LOCALBIN)/goimports -l -w -e $(SRC_DIRS)
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -43,7 +43,7 @@ test: test-unit+kube-envtest ## Run all tests. You can also select a category by
 test-%:
 	$(eval test-type:=$(subst +,||,$(subst test-,,$@)))
 	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" \
-	ginkgo -r --label-filter="$(test-type)" -vet=off \
+	$(LOCALBIN)/ginkgo -r --label-filter="$(test-type)" -vet=off \
 	-coverprofile cover.out --junit-report=ginkgo-test-results.xml ${args}
 
 ##@ Build
@@ -67,7 +67,6 @@ run: generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 ##@ Container images
-
 CONTAINER_ENGINE ?= podman
 
 .PHONY: image
@@ -86,7 +85,7 @@ endif
 
 .PHONY: deploy
 deploy: generate ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/manager && kustomize edit set image controller=${IMG}:${TAG}
 	kubectl apply -k config/base
 
 .PHONY: undeploy
@@ -94,11 +93,8 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 	kubectl delete --ignore-not-found=$(ignore-not-found) -k config/base
 
 ##@ Build Dependencies
-
-## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin
 $(shell	mkdir -p $(LOCALBIN))
-PATH:=$(LOCALBIN):$(PATH)
 
 .PHONY: tools
 tools: deps
