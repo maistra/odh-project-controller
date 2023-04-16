@@ -33,7 +33,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 	)
 
 	AfterEach(func() {
-		CreateClusterCleaner(cli, envTest.Config, timeout, interval).DeleteAll(testNs)
+		CreateCleaner(cli, envTest.Config, timeout, interval).DeleteAll(testNs)
 	})
 
 	Context("enabling service mesh", func() {

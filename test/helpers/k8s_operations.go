@@ -1,4 +1,4 @@
-package label
+package cluster
 
 import (
 	"context"
@@ -17,22 +17,22 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// ClusterCleaner is a struct to perform deletion of resources,
+// Cleaner is a struct to perform deletion of resources,
 // enforcing removal of finalizers. Otherwise deletion of namespaces wouldn't be possible.
 // See: https://book.kubebuilder.io/reference/envtest.html#namespace-usage-limitation
 // Based on https://github.com/kubernetes-sigs/controller-runtime/issues/880#issuecomment-749742403
-type ClusterCleaner struct {
+type Cleaner struct {
 	clientset         *kubernetes.Clientset
 	client            client.Client
 	timeout, interval time.Duration
 }
 
-func CreateClusterCleaner(c client.Client, config *rest.Config, timeout, interval time.Duration) *ClusterCleaner {
+func CreateCleaner(c client.Client, config *rest.Config, timeout, interval time.Duration) *Cleaner {
 	k8sClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	return &ClusterCleaner{
+	return &Cleaner{
 		clientset: k8sClient,
 		client:    c,
 		timeout:   timeout,
@@ -40,7 +40,7 @@ func CreateClusterCleaner(c client.Client, config *rest.Config, timeout, interva
 	}
 }
 
-func (c *ClusterCleaner) DeleteAll(objects ...client.Object) {
+func (c *Cleaner) DeleteAll(objects ...client.Object) {
 	for _, obj := range objects {
 
 		Expect(client.IgnoreNotFound(c.client.Delete(context.Background(), obj))).Should(Succeed())
