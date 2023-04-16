@@ -42,9 +42,7 @@ test-%:
 	$(eval test-type:=$(subst test-,,$@))
 	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" \
 	ginkgo -r --label-filter="$(test-type)" -vet=off \
-	--junit-report=ginkgo-test-results.xml ${args}
-
-
+	-coverprofile cover.out --junit-report=ginkgo-test-results.xml ${args}
 
 ##@ Build
 GOOS?=$(shell uname -s | tr '[:upper:]' '[:lower:]')
