@@ -8,6 +8,7 @@ import (
 	maistrav1 "maistra.io/api/core/v1"
 )
 
+// RegisterSchemes adds schemes of used resources to controller's scheme.
 func RegisterSchemes(s *runtime.Scheme) {
 	utilruntime.Must(clientgoscheme.AddToScheme(s))
 	utilruntime.Must(maistrav1.AddToScheme(s))

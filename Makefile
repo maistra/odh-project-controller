@@ -35,8 +35,16 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: generate fmt vet ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" ginkgo -r -vet=off --junit-report=ginkgo-test-results.xml ${args}
+test: generate fmt vet
+test: test-unit test-kube-envtest ## Run all tests. You can also select a category by running e.g. make test-unit or make test-kube-envtest
+
+test-%:
+	$(eval test-type:=$(subst test-,,$@))
+	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" \
+	ginkgo -r --label-filter="$(test-type)" -vet=off \
+	--junit-report=ginkgo-test-results.xml ${args}
+
+
 
 ##@ Build
 GOOS?=$(shell uname -s | tr '[:upper:]' '[:lower:]')

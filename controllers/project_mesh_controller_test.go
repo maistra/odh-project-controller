@@ -19,6 +19,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/onsi/gomega/format"
+	. "github.com/opendatahub-io/odh-project-controller/test/helpers"
+	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	"os"
 	"time"
 
@@ -26,7 +28,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
-	. "github.com/opendatahub-io/odh-project-controller/controllers/testing"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +40,7 @@ const (
 	interval = 250 * time.Millisecond
 )
 
-var _ = When("Namespace is created", func() {
+var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	var (
 		testNs *v1.Namespace

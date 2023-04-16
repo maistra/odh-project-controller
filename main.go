@@ -57,10 +57,10 @@ func main() {
 
 	if err = (&controllers.OpenshiftServiceMeshReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("project"),
+		Log:    ctrl.Log.WithName("controllers").WithName("odh-project"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "project")
+		setupLog.Error(err, "unable to create controller", "controller", "odh-project")
 		os.Exit(1)
 	}
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/manifestival/manifestival"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
+	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -61,6 +62,9 @@ func TestController(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
+		return
+	}
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	opts := zap.Options{
@@ -112,6 +116,9 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
+		return
+	}
 	By("Tearing down the test environment")
 	cancel()
 	Expect(envTest.Stop()).To(Succeed())

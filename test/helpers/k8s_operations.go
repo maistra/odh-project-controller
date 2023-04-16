@@ -1,4 +1,4 @@
-package cleanup_test
+package label
 
 import (
 	"context"

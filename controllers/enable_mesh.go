@@ -28,7 +28,7 @@ import (
 	maistrav1 "maistra.io/api/core/v1"
 )
 
-// Reconcile will manage the creation, update and deletion of the MeshMember for created namespace
+// Reconcile will manage the creation, update and deletion of the MeshMember for created the namespace.
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "mesh", "namespace", ns.Name)
 

@@ -84,7 +84,7 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace) *aut
 		},
 		Spec: authorino.AuthConfigSpec{
 			Hosts: []string{
-				removeProtocolPrefix(ns.Annotations[AnnotationHubURL]),
+				RemoveProtocolPrefix(ns.Annotations[AnnotationHubURL]),
 			},
 			Identity: []*authorino.Identity{
 				{
@@ -139,7 +139,7 @@ func CompareAuthConfigs(a1, a2 authorino.AuthConfig) bool {
 		reflect.DeepEqual(a1.Spec, a2.Spec)
 }
 
-func removeProtocolPrefix(s string) string {
+func RemoveProtocolPrefix(s string) string {
 	r := regexp.MustCompile(`^(https?://)`)
 	return r.ReplaceAllString(s, "")
 }
