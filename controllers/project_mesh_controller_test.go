@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega/format"
-	. "github.com/opendatahub-io/odh-project-controller/test/helpers"
+	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 
 	authorino "github.com/kuadrant/authorino/api/v1beta1"

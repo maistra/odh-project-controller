@@ -91,8 +91,9 @@ func compareMeshMembers(m1, m2 maistrav1.ServiceMeshMember) bool {
 }
 
 func serviceMeshIsNotEnabled(meta metav1.ObjectMeta) bool {
-	if meta.Annotations[AnnotationServiceMesh] != "" {
-		enabled, _ := strconv.ParseBool(meta.Annotations[AnnotationServiceMesh])
+	serviceMeshAnnotation := meta.Annotations[AnnotationServiceMesh]
+	if serviceMeshAnnotation != "" {
+		enabled, _ := strconv.ParseBool(serviceMeshAnnotation)
 		return !enabled
 	}
 
