@@ -18,6 +18,11 @@ type reconcileFunc func(ctx context.Context, ns *v1.Namespace) error
 func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "authorino", "namespace", ns.Name)
 
+	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
+		log.Info("Skipped")
+		return nil
+	}
+
 	if ns.Annotations[AnnotationHubURL] == "" {
 		log.V(1).Info("Unable to create AuthConfig because of missing annotation", "expected-annotation", AnnotationHubURL)
 		return nil
