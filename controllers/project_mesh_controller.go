@@ -16,7 +16,7 @@ import (
 
 const (
 	AnnotationServiceMesh = "opendatahub.io/service-mesh"
-	AnnotationHubURL      = "opendatahub.io/hub-url"
+	AnnotationHubURL      = "opendatahub.io/hub-host"
 )
 
 // OpenshiftServiceMeshReconciler holds the controller configuration.
