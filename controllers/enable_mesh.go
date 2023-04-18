@@ -77,8 +77,9 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 			Labels:    map[string]string{"opendatahub.io/ns": ns.Name},
 		},
 		Spec: maistrav1.ServiceMeshMemberSpec{
+			// TODO should we make it configurable?
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
-				Name:      "odh",
+				Name:      "basic",
 				Namespace: "istio-system",
 			},
 		},
