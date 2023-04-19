@@ -5,6 +5,12 @@ import (
 	"reflect"
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	routev1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	v1 "k8s.io/api/core/v1"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -17,11 +23,6 @@ import (
 // Reconcile will manage the creation, update and deletion of the MeshMember for created the namespace.
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "mesh", "namespace", ns.Name)
-
-	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
-		log.Info("Skipped")
-		return nil
-	}
 
 	desiredMeshMember := newServiceMeshMember(ns)
 	foundMember := &maistrav1.ServiceMeshMember{}
@@ -98,4 +99,25 @@ func serviceMeshIsNotEnabled(meta metav1.ObjectMeta) bool {
 	}
 
 	return true
+}
+
+func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (routev1.RouteList, error) {
+	routes := routev1.RouteList{}
+	if err := r.List(ctx, &routes, &client.ListOptions{
+		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
+		Namespace:     MeshNamespace,
+	}); err != nil {
+		r.Log.Error(err, "Unable to find matching gateway")
+		return routev1.RouteList{}, err
+	}
+
+	if len(routes.Items) == 0 {
+		route := &routev1.Route{}
+		return routes, apierrs.NewNotFound(schema.GroupResource{
+			Group:    route.GroupVersionKind().Group,
+			Resource: route.ResourceVersion,
+		}, "No routes found")
+	}
+
+	return routes, nil
 }

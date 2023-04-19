@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/onsi/gomega/format"
 	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
@@ -29,11 +31,16 @@ const (
 var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	var (
-		testNs *v1.Namespace
+		testNs        *v1.Namespace
+		objectCleaner *Cleaner
 	)
 
+	BeforeEach(func() {
+		objectCleaner = CreateCleaner(cli, envTest.Config, timeout, interval)
+	})
+
 	AfterEach(func() {
-		CreateCleaner(cli, envTest.Config, timeout, interval).DeleteAll(testNs)
+		objectCleaner.DeleteAll(testNs)
 	})
 
 	Context("enabling service mesh", func() {
@@ -158,6 +165,73 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				Expect(authConfigs.Items).Should(BeEmpty())
 			})
 		})
+	})
+
+	Context("propagating gateway host", func() {
+
+		FIt("should add gateway host to the namespace", func() {
+			// given
+			istioNs := &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "istio-system",
+				},
+			}
+
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "plain-meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "odh-gateway",
+					Namespace: "istio-system",
+					Labels: map[string]string{
+						"app": "odh-dashboard",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					Host: "istio.io",
+					To: routev1.RouteTargetReference{
+						Name: "odh-gateway",
+					},
+				},
+			}
+
+			defer objectCleaner.DeleteAll(route, istioNs)
+
+			// when
+			Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
+			Expect(cli.Create(context.Background(), route)).To(Succeed())
+
+			// then
+			actualRoute := &routev1.Route{}
+			Eventually(func() error {
+				return cli.Get(context.Background(), types.NamespacedName{
+					Namespace: route.Namespace,
+					Name:      route.Name,
+				}, actualRoute)
+			}).
+				WithTimeout(timeout).
+				WithPolling(interval).
+				Should(Succeed())
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			actualTestNs := &v1.Namespace{}
+			Eventually(func() string {
+				_ = cli.Get(context.Background(), types.NamespacedName{Name: testNs.Name}, actualTestNs)
+				return actualTestNs.Annotations[controllers.AnnotationGatewayHost]
+			}).
+				WithTimeout(timeout).
+				WithPolling(interval).
+				Should(Equal("istio.io"))
+		})
+
 	})
 
 })

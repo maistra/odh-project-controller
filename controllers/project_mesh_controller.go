@@ -16,6 +16,7 @@ import (
 
 const (
 	AnnotationServiceMesh = "opendatahub.io/service-mesh"
+	AnnotationGatewayHost = "opendatahub.io/service-mesh-gw-host"
 	MeshNamespace         = "istio-system"
 )
 
@@ -33,11 +34,11 @@ type OpenshiftServiceMeshReconciler struct {
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch
 
-// Reconcile TODO yeah.
+// Reconcile ensures that the namespace has all required resources needed to be part of the Service Mesh of Open Data Hub.
 func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 
-	reconcilers := []reconcileFunc{r.reconcileMeshMember, r.reconcileAuthConfig}
+	reconcilers := []reconcileFunc{r.addGatewayHostAnnotation, r.reconcileMeshMember, r.reconcileAuthConfig}
 
 	ns := &v1.Namespace{}
 	err := r.Get(ctx, req.NamespacedName, ns)
@@ -47,6 +48,11 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
+		log.Info("Skipped")
+		return ctrl.Result{}, nil
 	}
 
 	errs := make([]error, len(reconcilers))

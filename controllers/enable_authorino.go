@@ -6,10 +6,6 @@ import (
 	"reflect"
 	"regexp"
 
-	routev1 "github.com/openshift/api/route/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -22,21 +18,7 @@ type reconcileFunc func(ctx context.Context, ns *v1.Namespace) error
 func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "authorino", "namespace", ns.Name)
 
-	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
-		log.Info("Skipped")
-		return nil
-	}
-
-	routes := routev1.RouteList{}
-	if err := r.List(ctx, &routes, &client.ListOptions{
-		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
-		Namespace:     MeshNamespace,
-	}); err != nil || len(routes.Items) == 0 {
-		log.Error(err, "Unable to find matching gateway")
-		return err
-	}
-
-	desiredAuthConfig, err := r.createAuthConfig(ns, routes.Items[0].Spec.Host)
+	desiredAuthConfig, err := r.createAuthConfig(ns, ns.ObjectMeta.Annotations[AnnotationGatewayHost])
 	if err != nil {
 		log.Error(err, "Failed creating AuthConfig object")
 		return err
