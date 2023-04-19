@@ -1,22 +1,17 @@
 package controllers_test
 
 import (
-	"bytes"
 	"context"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/manifestival/manifestival"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
 	maistramanifests "maistra.io/api/manifests"
-
-	mf "github.com/manifestival/manifestival"
 
 	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -114,24 +109,8 @@ func loadCRDs() []*v1.CustomResourceDefinition {
 	smmYaml, err := maistramanifests.ReadManifest("maistra.io_servicemeshmembers.yaml")
 	Expect(err).NotTo(HaveOccurred())
 	crd := &v1.CustomResourceDefinition{}
-	err = convertToStructuredResource(smmYaml, crd)
+	err = controllers.ConvertToStructuredResource(smmYaml, crd)
 	Expect(err).NotTo(HaveOccurred())
 
 	return []*v1.CustomResourceDefinition{crd}
-}
-
-func convertToStructuredResource(yamlContent []byte, out interface{}, opts ...manifestival.Option) error {
-	reader := bytes.NewReader(yamlContent)
-	m, err := mf.ManifestFrom(manifestival.Reader(reader), opts...)
-	if err != nil {
-		return err
-	}
-
-	s := scheme.Scheme
-	controllers.RegisterSchemes(s)
-	err = s.Convert(&m.Resources()[0], out, nil)
-	if err != nil {
-		return err
-	}
-	return nil
 }

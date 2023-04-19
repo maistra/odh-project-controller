@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	_ "embed"
 	"reflect"
 	"regexp"
 
@@ -12,7 +13,6 @@ import (
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 )
@@ -36,11 +36,15 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 		return err
 	}
 
-	desiredAuthConfig := r.createAuthConfig(ns, routes.Items[0].Spec.Host)
+	desiredAuthConfig, err := r.createAuthConfig(ns, routes.Items[0].Spec.Host)
+	if err != nil {
+		log.Error(err, "Failed creating AuthConfig object")
+		return err
+	}
 	foundAuthConfig := &authorino.AuthConfig{}
 	justCreated := false
 
-	err := r.Get(ctx, types.NamespacedName{
+	err = r.Get(ctx, types.NamespacedName{
 		Name:      desiredAuthConfig.Name,
 		Namespace: ns.Name,
 	}, foundAuthConfig)
@@ -83,74 +87,34 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 	return nil
 }
 
-func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) *authorino.AuthConfig {
+//go:embed template/authconfig.yaml
+var authConfigTemplate string
 
+func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) (*authorino.AuthConfig, error) {
 	authHosts := make([]string, len(hosts))
-
 	for i := range hosts {
 		authHosts = append(authHosts, RemoveProtocolPrefix(hosts[i]))
 	}
 
-	return &authorino.AuthConfig{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "AuthConfig",
-			APIVersion: "authorino.kuadrant.io/v1beta1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ns.Name + "-protection",
-			Namespace: ns.Name,
-			Labels: map[string]string{
-				"authorino/topic": "odh",
-			},
-		},
-		Spec: authorino.AuthConfigSpec{
-			Hosts: authHosts,
-			Identity: []*authorino.Identity{
-				{
-					Name: "authorized-service-accounts",
-					KubernetesAuth: &authorino.Identity_KubernetesAuth{
-						Audiences: []string{
-							"https://kubernetes.default.svc",
-						},
-					},
-				},
-			},
-			Authorization: []*authorino.Authorization{
-				{
-					Name: "k8s-rbac",
-					KubernetesAuthz: &authorino.Authorization_KubernetesAuthz{
-						User: authorino.StaticOrDynamicValue{
-							ValueFrom: authorino.ValueFrom{
-								AuthJSON: "auth.identity.username",
-							},
-						},
-					},
-				},
-			},
-			Response: []*authorino.Response{
-				{
-					Name: "x-auth-data",
-					JSON: &authorino.Response_DynamicJSON{
-						Properties: []authorino.JsonProperty{
-							{
-								Name: "username",
-								ValueFrom: authorino.ValueFrom{
-									AuthJSON: "auth.identity.username",
-								},
-							},
-						},
-					},
-				},
-			},
-			DenyWith: &authorino.DenyWith{
-				Unauthorized: &authorino.DenyWithSpec{
-					Message: &authorino.StaticOrDynamicValue{
-						Value: "Authorino Denied",
-					},
-				},
-			},
-		},
+	authConfig := &authorino.AuthConfig{}
+	if err := ConvertToStructuredResource([]byte(authConfigTemplate), authConfig); err != nil {
+		return authConfig, err
 	}
+
+	authConfig.SetName(ns.Name + "-protection")
+	authConfig.SetNamespace(ns.Name)
+	authConfig.Spec.Hosts = authHosts
+
+	// Assumption - there is only one right now in the template
+	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{
+		Namespace: authorino.StaticOrDynamicValue{Value: ns.Name},
+		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
+		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
+		Name:      authorino.StaticOrDynamicValue{Value: "nb"}, // TODO is that needed?
+		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
+	}
+
+	return authConfig, nil
 }
 
 func CompareAuthConfigs(a1, a2 authorino.AuthConfig) bool {

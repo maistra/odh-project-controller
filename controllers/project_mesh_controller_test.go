@@ -115,7 +115,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 			By("creating authorization config resource", func() {
 				expectedAuthConfig := &authorino.AuthConfig{}
 				file, _ := os.ReadFile("testdata/expected_authconfig.yaml")
-				Expect(convertToStructuredResource(file, expectedAuthConfig)).To(Succeed())
+				Expect(controllers.ConvertToStructuredResource(file, expectedAuthConfig)).To(Succeed())
 				namespacedName := types.NamespacedName{
 					Namespace: testNs.Name,
 					Name:      expectedAuthConfig.Name,
