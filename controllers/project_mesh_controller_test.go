@@ -97,14 +97,13 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	Context("enabling external authorization", func() {
 
-		XIt("should configure authorization rules if annotation is set to true", func() {
+		XIt("should configure authorization rules for ns belonging to the mesh", func() {
 			// given
 			testNs = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "meshified-and-authorized-ns",
 					Annotations: map[string]string{
 						controllers.AnnotationServiceMesh: "true",
-						controllers.AnnotationHubURL:      "opendatahub-odh-gateway-525eca1d5089dbdc-istio-system.apps-crc.testing",
 					},
 				},
 			}
@@ -134,7 +133,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 			})
 		})
 
-		It("should not configure authorization rules if annotation is absent", func() {
+		It("should not configure authorization rules if namespace is not part of the mesh", func() {
 			// given
 			testNs = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{

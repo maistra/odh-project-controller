@@ -74,13 +74,12 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default", // The name MUST be default, per the maistra docs
 			Namespace: ns.Name,
-			Labels:    map[string]string{"opendatahub.io/ns": ns.Name},
 		},
 		Spec: maistrav1.ServiceMeshMemberSpec{
 			// TODO should we make it configurable?
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
 				Name:      "basic",
-				Namespace: "istio-system",
+				Namespace: MeshNamespace,
 			},
 		},
 	}

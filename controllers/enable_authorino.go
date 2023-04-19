@@ -5,6 +5,10 @@ import (
 	"reflect"
 	"regexp"
 
+	routev1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -23,12 +27,16 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 		return nil
 	}
 
-	if ns.Annotations[AnnotationHubURL] == "" {
-		log.V(1).Info("Unable to create AuthConfig because of missing annotation", "expected-annotation", AnnotationHubURL)
-		return nil
+	routes := routev1.RouteList{}
+	if err := r.List(ctx, &routes, &client.ListOptions{
+		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
+		Namespace:     MeshNamespace,
+	}); err != nil || len(routes.Items) == 0 {
+		log.Error(err, "Unable to find matching gateway")
+		return err
 	}
 
-	desiredAuthConfig := r.createAuthConfig(ns)
+	desiredAuthConfig := r.createAuthConfig(ns, routes.Items[0].Spec.Host)
 	foundAuthConfig := &authorino.AuthConfig{}
 	justCreated := false
 
@@ -75,7 +83,14 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 	return nil
 }
 
-func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace) *authorino.AuthConfig {
+func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) *authorino.AuthConfig {
+
+	authHosts := make([]string, len(hosts))
+
+	for i := range hosts {
+		authHosts = append(authHosts, RemoveProtocolPrefix(hosts[i]))
+	}
+
 	return &authorino.AuthConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AuthConfig",
@@ -89,9 +104,7 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace) *aut
 			},
 		},
 		Spec: authorino.AuthConfigSpec{
-			Hosts: []string{
-				RemoveProtocolPrefix(ns.Annotations[AnnotationHubURL]),
-			},
+			Hosts: authHosts,
 			Identity: []*authorino.Identity{
 				{
 					Name: "authorized-service-accounts",

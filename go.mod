@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/go-logr/logr v1.2.3
 	github.com/kuadrant/authorino v0.12.0
+	github.com/openshift/api v0.0.0-20230213134911-7ba313770556 // relese-4.12
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
