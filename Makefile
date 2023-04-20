@@ -1,8 +1,8 @@
 include func.mk
 
-# Image URL to use all building/pushing image targets
-IMG ?= quay.io/opendatahub/odh-project-controller
-TAG ?= $(shell git describe --tags --always)
+PROJECT_NAME:=odh-project-controller
+PACKAGE_NAME:=github.com/opendatahub-io/$(PROJECT_NAME)
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26
 
@@ -52,6 +52,24 @@ GOOS?=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 GOARCH?=$(shell uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/')
 GOBUILD:=GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0
 
+# Version values
+BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+GITUNTRACKEDCHANGES:=$(shell git status --porcelain --untracked-files=no)
+COMMIT:=$(shell git rev-parse --short HEAD)
+ifneq ($(GITUNTRACKEDCHANGES),)
+	COMMIT:=$(COMMIT)-dirty
+endif
+
+VERSION?=$(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")
+GIT_TAG?=$(shell git describe --tags --abbrev=0 --exact-match > /dev/null 2>&1; echo $$?)
+ifneq ($(GIT_TAG),0)
+	ifeq ($(origin VERSION),file)
+		VERSION:=$(VERSION)-next
+	endif
+endif
+
+LDFLAGS?=-w -X ${PACKAGE_NAME}/version.Version=${VERSION} -X ${PACKAGE_NAME}/version.Commit=${COMMIT} -X ${PACKAGE_NAME}/version.BuildTime=${BUILD_TIME}
+
 .PHONY: deps
 deps:
 	go mod download && go mod tidy
@@ -61,7 +79,7 @@ build: deps generate fmt vet go-build ## Build manager binary.
 
 .PHONY: go-build
 go-build:
-	${GOBUILD} go build -o bin/manager main.go
+	${GOBUILD} go build -ldflags "${LDFLAGS}" -o bin/manager main.go
 
 .PHONY: run
 run: generate fmt vet ## Run a controller from your host.
@@ -69,10 +87,12 @@ run: generate fmt vet ## Run a controller from your host.
 
 ##@ Container images
 CONTAINER_ENGINE ?= podman
+IMG ?= quay.io/opendatahub/$(PROJECT_NAME)
+TAG ?= $(COMMIT)
 
 .PHONY: docker-image
 docker-image: ## Build container image with the manager.
-	${CONTAINER_ENGINE} build . -t ${IMG}:${TAG} ${DOCKER_ARGS}
+	${CONTAINER_ENGINE} build --build-arg LDFLAGS="$(LDFLAGS)" . -t ${IMG}:${TAG} ${DOCKER_ARGS}
 
 .PHONY: docker-push
 docker-push: ## Push container image with the manager.
