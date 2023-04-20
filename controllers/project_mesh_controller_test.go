@@ -169,7 +169,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	Context("propagating gateway host", func() {
 
-		FIt("should add gateway host to the namespace", func() {
+		It("should add gateway host to the namespace", func() {
 			// given
 			istioNs := &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
