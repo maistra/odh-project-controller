@@ -93,7 +93,6 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 		Namespace: authorino.StaticOrDynamicValue{Value: ns.Name},
 		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
 		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
-		Name:      authorino.StaticOrDynamicValue{Value: "nb"}, // TODO is that needed?
 		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
 	}
 
