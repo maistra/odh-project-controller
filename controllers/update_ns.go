@@ -23,6 +23,6 @@ func (r *OpenshiftServiceMeshReconciler) addGatewayHostAnnotation(ctx context.Co
 		return nil
 	}
 
-	ns.ObjectMeta.Annotations[AnnotationGatewayHost] = RemoveProtocolPrefix(routes.Items[0].Spec.Host)
+	ns.ObjectMeta.Annotations[AnnotationGatewayHost] = ExtractHostName(routes.Items[0].Spec.Host)
 	return r.Client.Update(ctx, ns)
 }

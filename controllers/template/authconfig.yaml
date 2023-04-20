@@ -31,4 +31,3 @@ spec:
     unauthorized:
       message:
         value: "Unauthorized"
-

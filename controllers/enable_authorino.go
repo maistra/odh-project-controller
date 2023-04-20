@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"reflect"
 	"regexp"
+	"strings"
 
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -75,7 +76,7 @@ var authConfigTemplate string
 func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) (*authorino.AuthConfig, error) {
 	authHosts := make([]string, len(hosts))
 	for i := range hosts {
-		authHosts = append(authHosts, RemoveProtocolPrefix(hosts[i]))
+		authHosts = append(authHosts, ExtractHostName(hosts[i]))
 	}
 
 	authConfig := &authorino.AuthConfig{}
@@ -87,7 +88,7 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 	authConfig.SetNamespace(ns.Name)
 	authConfig.Spec.Hosts = authHosts
 
-	// Assumption - there is only one right now in the template
+	// Assumption - there is only one check for getting a resource - in this case notebook
 	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{
 		Namespace: authorino.StaticOrDynamicValue{Value: ns.Name},
 		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
@@ -104,7 +105,18 @@ func CompareAuthConfigs(a1, a2 authorino.AuthConfig) bool {
 		reflect.DeepEqual(a1.Spec, a2.Spec)
 }
 
-func RemoveProtocolPrefix(s string) string {
+// ExtractHostName strips given URL in string from http(s):// prefix and subsequent path.
+// This is useful when getting value from http headers (such as origin), as Authorino needs host only.
+// If given string does not start with http(s) prefix it will be returned as is.
+func ExtractHostName(s string) string {
 	r := regexp.MustCompile(`^(https?://)`)
-	return r.ReplaceAllString(s, "")
+	withoutProtocol := r.ReplaceAllString(s, "")
+	if s == withoutProtocol {
+		return s
+	}
+	index := strings.Index(withoutProtocol, "/")
+	if index == -1 {
+		return withoutProtocol
+	}
+	return withoutProtocol[:index]
 }

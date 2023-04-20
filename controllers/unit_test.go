@@ -11,12 +11,14 @@ var _ = Describe("Controller helper functions", Label(labels.Unit), func() {
 
 	When("Preparing host URL for Authorino's AuthConfig", func() {
 
-		DescribeTable("it should remove protocol prefix from provided string",
+		DescribeTable("it should remove protocol prefix from provided string and path",
 			func(value, expected string) {
-				Expect(controllers.RemoveProtocolPrefix(value)).To(Equal(expected))
+				Expect(controllers.ExtractHostName(value)).To(Equal(expected))
 			},
 			Entry("for HTTP url", "http://authconfig.dev", "authconfig.dev"),
+			Entry("for HTTP url with path", "http://authconfig.dev/api/resources", "authconfig.dev"),
 			Entry("for HTTPS url", "http://authconfig.dev", "authconfig.dev"),
+			Entry("for HTTPS url with path and query params", "http://authconfig.dev/api/resources?limit=500", "authconfig.dev"),
 			Entry("for HTTPS url", "authconfig.dev", "authconfig.dev"),
 			Entry("for HTTPS url", "gopher://authconfig.dev", "gopher://authconfig.dev"),
 		)
