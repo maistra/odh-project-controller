@@ -2,13 +2,12 @@ package controllers_test
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
+
+	"github.com/opendatahub-io/odh-project-controller/test"
 
 	routev1 "github.com/openshift/api/route/v1"
 
-	"github.com/onsi/gomega/format"
 	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 
@@ -104,7 +103,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	Context("enabling external authorization", func() {
 
-		XIt("should configure authorization rules for ns belonging to the mesh", func() {
+		It("should configure authorization rules for ns belonging to the mesh", func() {
 			// given
 			testNs = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
@@ -115,14 +114,40 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				},
 			}
 
+			istioNs := &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "istio-system",
+				},
+			}
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "odh-gateway",
+					Namespace: "istio-system",
+					Labels: map[string]string{
+						"app": "odh-dashboard",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					Host: "istio.io",
+					To: routev1.RouteTargetReference{
+						Name: "odh-gateway",
+					},
+				},
+			}
+
+			defer objectCleaner.DeleteAll(route, istioNs)
+
 			// when
+			Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
+			Expect(cli.Create(context.Background(), route)).To(Succeed())
 			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
 			// then
 			By("creating authorization config resource", func() {
 				expectedAuthConfig := &authorino.AuthConfig{}
-				file, _ := os.ReadFile("testdata/expected_authconfig.yaml")
-				Expect(controllers.ConvertToStructuredResource(file, expectedAuthConfig)).To(Succeed())
+
+				Expect(controllers.ConvertToStructuredResource(test.ExpectedAuthConfig, expectedAuthConfig)).To(Succeed())
 				namespacedName := types.NamespacedName{
 					Namespace: testNs.Name,
 					Name:      expectedAuthConfig.Name,
@@ -134,9 +159,10 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					WithTimeout(timeout).
 					WithPolling(interval).
 					Should(Succeed())
-
-				Expect(controllers.CompareAuthConfigs(*expectedAuthConfig, *actualAuthConfig)).
-					To(BeTrue(), fmt.Sprintf("Expected: %1s\n Got: %2s\n", format.Object(expectedAuthConfig, 1), format.Object(actualAuthConfig, 1)))
+				// TODO should extend assertions to auth rules
+				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
+				Expect(actualAuthConfig.Labels).To(Equal(expectedAuthConfig.Labels))
+				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
 			})
 		})
 

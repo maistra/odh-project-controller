@@ -71,16 +71,16 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 }
 
 //go:embed template/authconfig.yaml
-var authConfigTemplate string
+var authConfigTemplate []byte
 
 func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) (*authorino.AuthConfig, error) {
 	authHosts := make([]string, len(hosts))
 	for i := range hosts {
-		authHosts = append(authHosts, ExtractHostName(hosts[i]))
+		authHosts[i] = ExtractHostName(hosts[i])
 	}
 
 	authConfig := &authorino.AuthConfig{}
-	if err := ConvertToStructuredResource([]byte(authConfigTemplate), authConfig); err != nil {
+	if err := ConvertToStructuredResource(authConfigTemplate, authConfig); err != nil {
 		return authConfig, err
 	}
 
