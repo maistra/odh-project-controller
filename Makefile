@@ -3,9 +3,6 @@ include func.mk
 PROJECT_NAME:=odh-project-controller
 PACKAGE_NAME:=github.com/opendatahub-io/$(PROJECT_NAME)
 
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.26
-
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -41,6 +38,7 @@ vet: ## Run go vet against code.
 test: generate fmt vet
 test: test-unit+kube-envtest ## Run all tests. You can also select a category by running e.g. make test-unit or make test-kube-envtest
 
+ENVTEST_K8S_VERSION = 1.26 # refers to the version of kubebuilder assets to be downloaded by envtest binary.
 test-%:
 	$(eval test-type:=$(subst +,||,$(subst test-,,$@)))
 	KUBEBUILDER_ASSETS="$(shell $(LOCALBIN)/setup-envtest use $(ENVTEST_K8S_VERSION) -p path)" \
