@@ -88,12 +88,11 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 	authConfig.SetNamespace(ns.Name)
 	authConfig.Spec.Hosts = authHosts
 
-	// Assumption - there is only one check for getting a resource - in this case notebook
+	// Reflects oauth-proxy SAR settings
 	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{
 		Namespace: authorino.StaticOrDynamicValue{Value: ns.Name},
 		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
 		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
-		Name:      authorino.StaticOrDynamicValue{Value: "nb"}, // TODO is that needed?
 		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/kuadrant/authorino/api/v1beta1"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -55,7 +57,7 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, nil
 	}
 
-	errs := make([]error, len(reconcilers))
+	var errs []error
 	for _, reconciler := range reconcilers {
 		errs = append(errs, reconciler(ctx, ns))
 	}
@@ -67,6 +69,7 @@ func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) erro
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Namespace{}).
 		Owns(&maistrav1.ServiceMeshMember{}).
+		Owns(&v1beta1.AuthConfig{}).
 		Complete(r)
 }
 

@@ -26,6 +26,7 @@ var _ = Describe("Controller helper functions", Label(labels.Unit), func() {
 	})
 
 	When("Checking namespace", func() {
+
 		DescribeTable("it should not process reserved namespaces",
 			func(ns string, expected bool) {
 				Expect(controllers.IsReservedNamespace(ns)).To(Equal(expected))
@@ -44,6 +45,7 @@ var _ = Describe("Controller helper functions", Label(labels.Unit), func() {
 			Entry("kubemynamespace is not reserved namespace", "kubemynamespace", false),
 			Entry("istio-system-openshift is not reserved namespace", "istio-system-openshift ", false),
 		)
+
 	})
 
 })
