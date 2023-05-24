@@ -211,9 +211,9 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					Name:      "odh-gateway",
 					Namespace: "istio-system",
 					Labels: map[string]string{
-						"app":                          "odh-dashboard",
-						"maistra.io/gateway-name":      "odh-gateway",
-						"maistra.io/gateway-namespace": "opendatahub",
+						"app":                        "odh-dashboard",
+						controllers.LabelMaistraGw:   "odh-gateway",
+						controllers.LabelMaistraGwNs: "opendatahub",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -243,8 +243,8 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				},
 			}
 
-			// update route to remove annotations
-			route.Labels["maistra.io/gateway-namespace"] = ""
+			// update route to remove gateway namespace label
+			delete(route.Labels, controllers.LabelMaistraGwNs)
 			Expect(cli.Update(context.Background(), route)).To(Succeed())
 
 			// when

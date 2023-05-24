@@ -34,13 +34,13 @@ func (r *OpenshiftServiceMeshReconciler) addGatewayAnnotations(ctx context.Conte
 }
 
 func extractGateway(meta metav1.ObjectMeta) string {
-	gwName := meta.Labels["maistra.io/gateway-name"]
+	gwName := meta.Labels[LabelMaistraGw]
 	if gwName == "" {
 		return ""
 	}
 	gateway := gwName
 
-	gwNs := meta.Labels["maistra.io/gateway-namespace"]
+	gwNs := meta.Labels[LabelMaistraGwNs]
 	if gwNs != "" {
 		gateway = gwNs + "/" + gwName
 	}
