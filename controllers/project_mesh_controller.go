@@ -19,7 +19,7 @@ import (
 const (
 	AnnotationServiceMesh = "opendatahub.io/service-mesh"
 	AnnotationGatewayHost = "opendatahub.io/service-mesh-gw-host"
-	AnnotationGateway     = "opendatahub.io/service-mesh-gateway"
+	AnnotationGateway     = "opendatahub.io/service-mesh-gw"
 	LabelMaistraGw        = "maistra.io/gateway-name"
 	LabelMaistraGwNs      = "maistra.io/gateway-namespace"
 	MeshNamespace         = "istio-system"
