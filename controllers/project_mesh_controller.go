@@ -19,6 +19,9 @@ import (
 const (
 	AnnotationServiceMesh = "opendatahub.io/service-mesh"
 	AnnotationGatewayHost = "opendatahub.io/service-mesh-gw-host"
+	AnnotationGateway     = "opendatahub.io/service-mesh-gw"
+	LabelMaistraGw        = "maistra.io/gateway-name"
+	LabelMaistraGwNs      = "maistra.io/gateway-namespace"
 	MeshNamespace         = "istio-system"
 )
 
@@ -40,7 +43,7 @@ type OpenshiftServiceMeshReconciler struct {
 func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 
-	reconcilers := []reconcileFunc{r.addGatewayHostAnnotation, r.reconcileMeshMember, r.reconcileAuthConfig}
+	reconcilers := []reconcileFunc{r.addGatewayAnnotations, r.reconcileMeshMember, r.reconcileAuthConfig}
 
 	ns := &v1.Namespace{}
 	err := r.Get(ctx, req.NamespacedName, ns)

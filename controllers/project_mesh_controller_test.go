@@ -193,31 +193,27 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 		})
 	})
 
-	Context("propagating gateway host", func() {
+	Context("propagating service mesh gateway info", func() {
 
-		It("should add gateway host to the namespace", func() {
-			// given
-			istioNs := &v1.Namespace{
+		var (
+			istioNs *v1.Namespace
+			route   *routev1.Route
+		)
+
+		BeforeEach(func() {
+			istioNs = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "istio-system",
 				},
 			}
-
-			testNs = &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "plain-meshified-ns",
-					Annotations: map[string]string{
-						controllers.AnnotationServiceMesh: "true",
-					},
-				},
-			}
-
-			route := &routev1.Route{
+			route = &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "odh-gateway",
 					Namespace: "istio-system",
 					Labels: map[string]string{
-						"app": "odh-dashboard",
+						"app":                        "odh-dashboard",
+						controllers.LabelMaistraGw:   "odh-gateway",
+						controllers.LabelMaistraGwNs: "opendatahub",
 					},
 				},
 				Spec: routev1.RouteSpec{
@@ -228,23 +224,80 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				},
 			}
 
-			defer objectCleaner.DeleteAll(route, istioNs)
-
-			// when
 			Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
 			Expect(cli.Create(context.Background(), route)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			objectCleaner.DeleteAll(route, istioNs)
+		})
+
+		It("should add just gateway name to the namespace if there is no gateway namespace defined", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "plain-meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			// update route to remove gateway namespace label
+			delete(route.Labels, controllers.LabelMaistraGwNs)
+			Expect(cli.Update(context.Background(), route)).To(Succeed())
+
+			// when
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
 			// then
-			actualRoute := &routev1.Route{}
-			Eventually(func() error {
-				return cli.Get(context.Background(), types.NamespacedName{
-					Namespace: route.Namespace,
-					Name:      route.Name,
-				}, actualRoute)
+			actualTestNs := &v1.Namespace{}
+			Eventually(func() string {
+				_ = cli.Get(context.Background(), types.NamespacedName{Name: testNs.Name}, actualTestNs)
+				return actualTestNs.Annotations[controllers.AnnotationGateway]
 			}).
 				WithTimeout(timeout).
 				WithPolling(interval).
-				Should(Succeed())
+				Should(Equal("odh-gateway"))
+		})
+
+		It("should add fully qualified gateway name to the namespace", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "plain-meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			// when
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			actualTestNs := &v1.Namespace{}
+			Eventually(func() string {
+				_ = cli.Get(context.Background(), types.NamespacedName{Name: testNs.Name}, actualTestNs)
+				return actualTestNs.Annotations[controllers.AnnotationGateway]
+			}).
+				WithTimeout(timeout).
+				WithPolling(interval).
+				Should(Equal("opendatahub/odh-gateway"))
+		})
+
+		It("should add gateway host to the namespace", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "plain-meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			// when
 			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
 			// then
