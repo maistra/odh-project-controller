@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/opendatahub-io/odh-project-controller/test"
@@ -97,6 +98,72 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					Should(Succeed())
 
 				Expect(members.Items).Should(BeEmpty())
+			})
+		})
+
+		It("should create an SMM with default name and ns when no env vars", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			// when
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			By("creating service mesh member object in the namespace", func() {
+				member := &maistrav1.ServiceMeshMember{}
+				namespacedName := types.NamespacedName{
+					Namespace: testNs.Name,
+					Name:      "default",
+				}
+				Eventually(func() error {
+					return cli.Get(context.Background(), namespacedName, member)
+				}).
+					WithTimeout(timeout).
+					WithPolling(interval).
+					Should(Succeed())
+				Expect(member.Spec.ControlPlaneRef.Name).To(Equal("basic"))
+				Expect(member.Spec.ControlPlaneRef.Namespace).To(Equal("istio-system"))
+			})
+		})
+
+		It("should create an SMM with specified env name and ns when env vars", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "meshified-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+			os.Setenv("CONTROL_PLANE_NAME", "minimal")
+			os.Setenv("MESH_NAMESPACE", "system-of-istio")
+
+			// when
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			By("creating service mesh member object in the namespace", func() {
+				member := &maistrav1.ServiceMeshMember{}
+				namespacedName := types.NamespacedName{
+					Namespace: testNs.Name,
+					Name:      "default",
+				}
+				Eventually(func() error {
+					return cli.Get(context.Background(), namespacedName, member)
+				}).
+					WithTimeout(timeout).
+					WithPolling(interval).
+					Should(Succeed())
+				Expect(member.Spec.ControlPlaneRef.Name).To(Equal("minimal"))
+				Expect(member.Spec.ControlPlaneRef.Namespace).To(Equal("system-of-istio"))
 			})
 		})
 	})

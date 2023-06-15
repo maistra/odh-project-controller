@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"strconv"
 
@@ -70,6 +71,17 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 }
 
 func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
+	// Fetch environment variables
+	controlPlaneName := os.Getenv("CONTROL_PLANE_NAME")
+	if controlPlaneName == "" {
+		controlPlaneName = "basic" // Default value if environment variable is not set
+	}
+
+	meshNamespace := os.Getenv("MESH_NAMESPACE")
+	if meshNamespace == "" {
+		meshNamespace = "istio-system" // Default value if environment variable is not set
+	}
+
 	return &maistrav1.ServiceMeshMember{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -79,8 +91,8 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 		Spec: maistrav1.ServiceMeshMemberSpec{
 			// TODO should we make it configurable?
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
-				Name:      "basic",
-				Namespace: MeshNamespace,
+				Name:      controlPlaneName,
+				Namespace: meshNamespace,
 			},
 		},
 	}
