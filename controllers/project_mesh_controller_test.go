@@ -143,8 +143,10 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					},
 				},
 			}
-			os.Setenv("CONTROL_PLANE_NAME", "minimal")
-			os.Setenv("MESH_NAMESPACE", "system-of-istio")
+			_ = os.Setenv("CONTROL_PLANE_NAME", "minimal")
+			defer os.Unsetenv("CONTROL_PLANE_NAME")
+			_ = os.Setenv("MESH_NAMESPACE", "system-of-istio")
+			defer os.Unsetenv("MESH_NAMESPACE")
 
 			// when
 			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
