@@ -165,6 +165,8 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				Expect(member.Spec.ControlPlaneRef.Name).To(Equal("minimal"))
 				Expect(member.Spec.ControlPlaneRef.Namespace).To(Equal("system-of-istio"))
 			})
+			os.Setenv("CONTROL_PLANE_NAME", "")
+			os.Setenv("MESH_NAMESPACE", "")
 		})
 	})
 
