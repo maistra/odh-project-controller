@@ -76,9 +76,9 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 		controlPlaneName = env
 	}
 
-	meshNamespace := os.Getenv("MESH_NAMESPACE")
-	if meshNamespace == "" {
-		meshNamespace = "istio-system" // Default value if environment variable is not set
+	meshNamespace := "istio-system"
+	if env, defined := os.LookupEnv("MESH_NAMESPACE"); defined {
+		meshNamespace = env
 	}
 
 	return &maistrav1.ServiceMeshMember{
@@ -88,7 +88,6 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 			Namespace: ns.Name,
 		},
 		Spec: maistrav1.ServiceMeshMemberSpec{
-			// TODO should we make it configurable?
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
 				Name:      controlPlaneName,
 				Namespace: meshNamespace,
