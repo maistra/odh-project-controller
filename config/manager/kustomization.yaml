@@ -11,7 +11,7 @@ images:
 configMapGenerator:
   - name: service-mesh-refs
     literals:
-      - CONTROL_PLANE_NAME=minimal
+      - CONTROL_PLANE_NAME=basic
       - MESH_NAMESPACE=istio-system
 generatorOptions:
   disableNameSuffixHash: true
