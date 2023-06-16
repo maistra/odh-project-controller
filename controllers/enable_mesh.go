@@ -71,10 +71,9 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 }
 
 func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
-	// Fetch environment variables
-	controlPlaneName := os.Getenv("CONTROL_PLANE_NAME")
-	if controlPlaneName == "" {
-		controlPlaneName = "basic" // Default value if environment variable is not set
+	controlPlaneName := "basic"
+	if env, defined := os.LookupEnv("CONTROL_PLANE_NAME"); defined {
+		controlPlaneName = env
 	}
 
 	meshNamespace := os.Getenv("MESH_NAMESPACE")
