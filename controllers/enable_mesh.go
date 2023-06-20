@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"strconv"
 
@@ -20,23 +19,6 @@ import (
 	"k8s.io/client-go/util/retry"
 	maistrav1 "maistra.io/api/core/v1"
 )
-
-// Helper functions to fetch the relevant environment variables
-func getControlPlaneName() string {
-	controlPlaneName := "basic"
-	if env, defined := os.LookupEnv(ControlPlaneEnv); defined {
-		controlPlaneName = env
-	}
-	return controlPlaneName
-}
-
-func getMeshNamespace() string {
-	meshNamespace := "istio-system"
-	if env, defined := os.LookupEnv(MeshNamespaceEnv); defined {
-		meshNamespace = env
-	}
-	return meshNamespace
-}
 
 // Reconcile will manage the creation, update and deletion of the MeshMember for created the namespace.
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
