@@ -55,8 +55,10 @@ spec:
                 configMapKeyRef:
                   name: service-mesh-refs
                   key: CONTROL_PLANE_NAME
+                  optional: true
             - name: MESH_NAMESPACE
               valueFrom:
                 configMapKeyRef:
                   name: service-mesh-refs
                   key: MESH_NAMESPACE
+                  optional: true
