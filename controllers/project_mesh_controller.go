@@ -22,7 +22,6 @@ const (
 	AnnotationGateway     = "opendatahub.io/service-mesh-gw"
 	LabelMaistraGw        = "maistra.io/gateway-name"
 	LabelMaistraGwNs      = "maistra.io/gateway-namespace"
-	MeshNamespace         = "istio-system"
 )
 
 // OpenshiftServiceMeshReconciler holds the controller configuration.

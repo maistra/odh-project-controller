@@ -7,3 +7,11 @@ images:
 - name: controller
   newName: quay.io/bmajsak/odh-project-controller
   newTag: latest
+
+configMapGenerator:
+  - name: service-mesh-refs
+    literals:
+      - CONTROL_PLANE_NAME=basic
+      - MESH_NAMESPACE=istio-system
+generatorOptions:
+  disableNameSuffixHash: true
