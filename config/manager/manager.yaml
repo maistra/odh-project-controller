@@ -49,3 +49,16 @@ spec:
             requests:
               cpu: 500m
               memory: 256Mi
+          env:
+            - name: CONTROL_PLANE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: service-mesh-refs
+                  key: CONTROL_PLANE_NAME
+                  optional: true
+            - name: MESH_NAMESPACE
+              valueFrom:
+                configMapKeyRef:
+                  name: service-mesh-refs
+                  key: MESH_NAMESPACE
+                  optional: true

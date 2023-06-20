@@ -70,6 +70,9 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 }
 
 func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
+	controlPlaneName := getControlPlaneName()
+	meshNamespace := getMeshNamespace()
+
 	return &maistrav1.ServiceMeshMember{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -77,10 +80,9 @@ func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
 			Namespace: ns.Name,
 		},
 		Spec: maistrav1.ServiceMeshMemberSpec{
-			// TODO should we make it configurable?
 			ControlPlaneRef: maistrav1.ServiceMeshControlPlaneRef{
-				Name:      "basic",
-				Namespace: MeshNamespace,
+				Name:      controlPlaneName,
+				Namespace: meshNamespace,
 			},
 		},
 	}
@@ -102,10 +104,12 @@ func serviceMeshIsNotEnabled(meta metav1.ObjectMeta) bool {
 }
 
 func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (routev1.RouteList, error) {
+	meshNamespace := getMeshNamespace()
+
 	routes := routev1.RouteList{}
 	if err := r.List(ctx, &routes, &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
-		Namespace:     MeshNamespace,
+		Namespace:     meshNamespace,
 	}); err != nil {
 		r.Log.Error(err, "Unable to find matching gateway")
 		return routev1.RouteList{}, err
