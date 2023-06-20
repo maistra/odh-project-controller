@@ -21,6 +21,23 @@ import (
 	maistrav1 "maistra.io/api/core/v1"
 )
 
+// Helper functions to fetch the relevant environment variables
+func getControlPlaneName() string {
+	controlPlaneName := "basic"
+	if env, defined := os.LookupEnv(ControlPlaneEnv); defined {
+		controlPlaneName = env
+	}
+	return controlPlaneName
+}
+
+func getMeshNamespace() string {
+	meshNamespace := "istio-system"
+	if env, defined := os.LookupEnv(MeshNamespaceEnv); defined {
+		meshNamespace = env
+	}
+	return meshNamespace
+}
+
 // Reconcile will manage the creation, update and deletion of the MeshMember for created the namespace.
 func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context, ns *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "mesh", "namespace", ns.Name)
@@ -71,15 +88,8 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 }
 
 func newServiceMeshMember(ns *v1.Namespace) *maistrav1.ServiceMeshMember {
-	controlPlaneName := "basic"
-	if env, defined := os.LookupEnv("CONTROL_PLANE_NAME"); defined {
-		controlPlaneName = env
-	}
-
-	meshNamespace := "istio-system"
-	if env, defined := os.LookupEnv("MESH_NAMESPACE"); defined {
-		meshNamespace = env
-	}
+	controlPlaneName := getControlPlaneName()
+	meshNamespace := getMeshNamespace()
 
 	return &maistrav1.ServiceMeshMember{
 		TypeMeta: metav1.TypeMeta{},
@@ -112,10 +122,7 @@ func serviceMeshIsNotEnabled(meta metav1.ObjectMeta) bool {
 }
 
 func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (routev1.RouteList, error) {
-	meshNamespace := "istio-system"
-	if env, defined := os.LookupEnv("MESH_NAMESPACE"); defined {
-		meshNamespace = env
-	}
+	meshNamespace := getMeshNamespace()
 
 	routes := routev1.RouteList{}
 	if err := r.List(ctx, &routes, &client.ListOptions{
