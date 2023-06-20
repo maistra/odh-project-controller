@@ -112,10 +112,15 @@ func serviceMeshIsNotEnabled(meta metav1.ObjectMeta) bool {
 }
 
 func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (routev1.RouteList, error) {
+	meshNamespace := "istio-system"
+	if env, defined := os.LookupEnv("MESH_NAMESPACE"); defined {
+		meshNamespace = env
+	}
+
 	routes := routev1.RouteList{}
 	if err := r.List(ctx, &routes, &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
-		Namespace:     MeshNamespace,
+		Namespace:     meshNamespace,
 	}); err != nil {
 		r.Log.Error(err, "Unable to find matching gateway")
 		return routev1.RouteList{}, err
