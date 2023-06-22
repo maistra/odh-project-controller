@@ -16,14 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	AnnotationServiceMesh = "opendatahub.io/service-mesh"
-	AnnotationGatewayHost = "opendatahub.io/service-mesh-gw-host"
-	AnnotationGateway     = "opendatahub.io/service-mesh-gw"
-	LabelMaistraGw        = "maistra.io/gateway-name"
-	LabelMaistraGwNs      = "maistra.io/gateway-namespace"
-)
-
 // OpenshiftServiceMeshReconciler holds the controller configuration.
 type OpenshiftServiceMeshReconciler struct {
 	client.Client
