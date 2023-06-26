@@ -9,7 +9,7 @@ require (
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.27.2
 	k8s.io/apiextensions-apiserver v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 	k8s.io/code-generator v0.27.2
 	maistra.io/api v0.0.0-20221103173341-6ef6ed929778
