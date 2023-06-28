@@ -86,6 +86,11 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 
 	authConfig.SetName(ns.Name + "-protection")
 	authConfig.SetNamespace(ns.Name)
+	keyValue, err := getAuthorinoTopic()
+	if err != nil {
+		return nil, err
+	}
+	authConfig.Labels[keyValue[0]] = keyValue[1]
 	authConfig.Spec.Hosts = authHosts
 
 	// Reflects oauth-proxy SAR settings
