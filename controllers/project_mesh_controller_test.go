@@ -172,7 +172,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 
 	Context("enabling external authorization", func() {
 
-		It("should configure authorization rules for ns belonging to the mesh", func() {
+		It("should configure authorization using defaults for ns belonging to the mesh", func() {
 			// given
 			testNs = &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
@@ -231,6 +231,71 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				// TODO should extend assertions to auth rules
 				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
 				Expect(actualAuthConfig.Labels).To(Equal(expectedAuthConfig.Labels))
+				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
+			})
+		})
+
+		It("should configure authorization using env vars for ns belonging to the mesh", func() {
+			// given
+			testNs = &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "meshified-and-authorized-ns",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "true",
+					},
+				},
+			}
+
+			istioNs := &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "istio-system",
+				},
+			}
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "odh-gateway",
+					Namespace: "istio-system",
+					Labels: map[string]string{
+						"app": "odh-dashboard",
+					},
+				},
+				Spec: routev1.RouteSpec{
+					Host: "istio.io",
+					To: routev1.RouteTargetReference{
+						Name: "odh-gateway",
+					},
+				},
+			}
+
+			defer objectCleaner.DeleteAll(route, istioNs)
+
+			// when
+			_ = os.Setenv(controllers.AuthorinoLabelSelector, "app=rhods")
+			defer os.Unsetenv(controllers.AuthorinoLabelSelector)
+			Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
+			Expect(cli.Create(context.Background(), route)).To(Succeed())
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			By("creating authorization config resource", func() {
+				expectedAuthConfig := &authorino.AuthConfig{}
+
+				Expect(controllers.ConvertToStructuredResource(test.ExpectedAuthConfig, expectedAuthConfig)).To(Succeed())
+				namespacedName := types.NamespacedName{
+					Namespace: testNs.Name,
+					Name:      expectedAuthConfig.Name,
+				}
+				actualAuthConfig := &authorino.AuthConfig{}
+				Eventually(func() error {
+					return cli.Get(context.Background(), namespacedName, actualAuthConfig)
+				}).
+					WithTimeout(timeout).
+					WithPolling(interval).
+					Should(Succeed())
+
+				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
+				Expect(actualAuthConfig.Labels).To(HaveKeyWithValue("app", "rhods"))
 				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
 			})
 		})
