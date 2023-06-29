@@ -86,7 +86,7 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 
 	authConfig.SetName(ns.Name + "-protection")
 	authConfig.SetNamespace(ns.Name)
-	keyValue, err := getAuthorinoTopic()
+	keyValue, err := getAuthorinoLabel()
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +100,8 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
 		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
 	}
+
+	authConfig.Spec.Identity[0].KubernetesAuth.Audiences = getAuthAudience()
 
 	return authConfig, nil
 }
