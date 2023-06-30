@@ -228,10 +228,11 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					WithTimeout(timeout).
 					WithPolling(interval).
 					Should(Succeed())
-				// TODO should extend assertions to auth rules
-				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
+
 				Expect(actualAuthConfig.Labels).To(Equal(expectedAuthConfig.Labels))
 				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
+				// TODO should extend assertions to auth rules
+				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
 			})
 		})
 
@@ -273,6 +274,9 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 			// when
 			_ = os.Setenv(controllers.AuthorinoLabelSelector, "app=rhods")
 			defer os.Unsetenv(controllers.AuthorinoLabelSelector)
+			_ = os.Setenv(controllers.AuthAudience, "opendatahub.io,foo , bar")
+			defer os.Unsetenv(controllers.AuthAudience)
+
 			Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
 			Expect(cli.Create(context.Background(), route)).To(Succeed())
 			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
@@ -294,9 +298,11 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 					WithPolling(interval).
 					Should(Succeed())
 
-				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
-				Expect(actualAuthConfig.Labels).To(HaveKeyWithValue("app", "rhods"))
 				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
+				Expect(actualAuthConfig.Labels).To(HaveKeyWithValue("app", "rhods"))
+				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
+				Expect(actualAuthConfig.Spec.Identity[0].KubernetesAuth.Audiences).
+					To(And(HaveLen(3), ContainElements("opendatahub.io", "foo", "bar")))
 			})
 		})
 
