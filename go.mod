@@ -7,9 +7,9 @@ require (
 	github.com/kuadrant/authorino v0.13.0
 	github.com/openshift/api v0.0.0-20230213134911-7ba313770556 // relese-4.12
 	go.uber.org/zap v1.24.0
-	k8s.io/api v0.27.3
+	k8s.io/api v0.27.4
 	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.3
+	k8s.io/apimachinery v0.27.4
 	k8s.io/client-go v0.27.3
 	k8s.io/code-generator v0.27.3
 	maistra.io/api v0.0.0-20221103173341-6ef6ed929778
