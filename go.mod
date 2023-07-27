@@ -14,7 +14,7 @@ require (
 	k8s.io/code-generator v0.27.3
 	maistra.io/api v0.0.0-20221103173341-6ef6ed929778
 	sigs.k8s.io/controller-runtime v0.15.0
-	sigs.k8s.io/controller-tools v0.12.0
+	sigs.k8s.io/controller-tools v0.12.1
 )
 
 // Testing deps
