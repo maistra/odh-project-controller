@@ -9,7 +9,7 @@ PACKAGE_NAME:=github.com/opendatahub-io/$(PROJECT_NAME)
 SHELL = /usr/bin/env bash -o pipefail
 
 .PHONY: all
-all: tools test build
+all: tools lint test build
 
 ##@ General
 .PHONY: help
@@ -26,16 +26,19 @@ generate: tools ## Generates required resources for the controller to work prope
 
 SRC_DIRS:=./controllers ./test
 SRCS:=$(shell find ${SRC_DIRS} -name "*.go")
-.PHONY: fmt
-fmt: $(SRCS) ## Formats the code.
-	$(LOCALBIN)/goimports -l -w -e $(SRC_DIRS)
 
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
+.PHONY: format
+format: $(SRCS) ## Removes unneeded imports and formats source code
+	$(call header,"Formatting code")
+	$(LOCALBIN)/goimports -l -w -e $(SRC_DIRS) $(TEST_DIRS)
+
+.PHONY: lint
+lint: tools ## Concurrently runs a whole bunch of static analysis tools
+	$(call header,"Running a whole bunch of static analysis tools")
+	$(LOCALBIN)/golangci-lint run --fix --sort-results
 
 .PHONY: test
-test: generate fmt vet
+test: generate
 test: test-unit+kube-envtest ## Run all tests. You can also select a category by running e.g. make test-unit or make test-kube-envtest
 
 ENVTEST_K8S_VERSION = 1.26 # refers to the version of kubebuilder assets to be downloaded by envtest binary.
@@ -73,14 +76,14 @@ deps:
 	go mod download && go mod tidy
 
 .PHONY: build
-build: deps generate fmt vet go-build ## Build manager binary.
+build: deps format generate go-build ## Build manager binary.
 
 .PHONY: go-build
 go-build:
 	${GOBUILD} go build -ldflags "${LDFLAGS}" -o bin/manager main.go
 
 .PHONY: run
-run: generate fmt vet ## Run a controller from your host.
+run: format generate ## Run a controller from your host.
 	go run ./main.go
 
 ##@ Container images
@@ -122,7 +125,7 @@ $(shell	mkdir -p $(LOCALBIN))
 tools: deps
 tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools in local ./bin folder
 tools: $(LOCALBIN)/setup-envtest $(LOCALBIN)/ginkgo
-tools: $(LOCALBIN)/goimports
+tools: $(LOCALBIN)/goimports $(LOCALBIN)/golangci-lint
 
 KUSTOMIZE_VERSION ?= v5.0.1
 $(LOCALBIN)/kustomize:
@@ -145,5 +148,10 @@ $(LOCALBIN)/ginkgo:
 	GOBIN=$(LOCALBIN) go install -mod=readonly github.com/onsi/ginkgo/v2/ginkgo
 
 $(LOCALBIN)/goimports:
-	$(call header,"Installing goimports")
+	$(call header,"Installing $(notdir $@)")
 	GOBIN=$(LOCALBIN) go install -mod=readonly golang.org/x/tools/cmd/goimports
+
+LINT_VERSION=v1.53.3
+$(LOCALBIN)/golangci-lint:
+	$(call header,"Installing $(notdir $@)")
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) $(LINT_VERSION)

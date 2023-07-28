@@ -6,19 +6,16 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
+	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	maistramanifests "maistra.io/api/manifests"
-
-	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -39,7 +36,7 @@ func TestController(t *testing.T) {
 	RunSpecs(t, "Controller & Webhook Suite")
 }
 
-var _ = BeforeSuite(func() {
+var _ = SynchronizedBeforeSuite(func() {
 	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
 		return
 	}
@@ -91,21 +88,23 @@ var _ = BeforeSuite(func() {
 		defer GinkgoRecover()
 		Expect(mgr.Start(ctx)).To(Succeed(), "Failed to start manager")
 	}()
-})
+}, func() {})
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
 	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
 		return
 	}
 	By("Tearing down the test environment")
 	cancel()
 	Expect(envTest.Stop()).To(Succeed())
-})
+}, func() {})
 
 func loadCRDs() []*v1.CustomResourceDefinition {
 	smmYaml, err := maistramanifests.ReadManifest("maistra.io_servicemeshmembers.yaml")
 	Expect(err).NotTo(HaveOccurred())
+
 	crd := &v1.CustomResourceDefinition{}
+
 	err = controllers.ConvertToStructuredResource(smmYaml, crd)
 	Expect(err).NotTo(HaveOccurred())
 

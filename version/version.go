@@ -1,5 +1,6 @@
 package version
 
+//nolint:gochecknoglobals //reason these are used for binary version output only
 var (
 	// Version hold a semantic version of the running binary.
 	Version = "v0.0.0"
