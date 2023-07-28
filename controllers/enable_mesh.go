@@ -52,7 +52,7 @@ func (r *OpenshiftServiceMeshReconciler) reconcileMeshMember(ctx context.Context
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if err := r.Get(ctx, types.NamespacedName{
 				Name:      desiredMeshMember.Name,
-				Namespace: ns.Namespace,
+				Namespace: ns.Name,
 			}, foundMember); err != nil {
 				return err
 			}
