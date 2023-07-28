@@ -33,6 +33,7 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 	var (
 		testNs        *v1.Namespace
 		objectCleaner *Cleaner
+		routeWeight   = int32(100)
 	)
 
 	BeforeEach(func() {
@@ -200,7 +201,8 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				Spec: routev1.RouteSpec{
 					Host: "istio.io",
 					To: routev1.RouteTargetReference{
-						Name: "odh-gateway",
+						Name:   "odh-gateway",
+						Weight: &routeWeight,
 					},
 				},
 			}
@@ -264,7 +266,8 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				Spec: routev1.RouteSpec{
 					Host: "istio.io",
 					To: routev1.RouteTargetReference{
-						Name: "odh-gateway",
+						Name:   "odh-gateway",
+						Weight: &routeWeight,
 					},
 				},
 			}
@@ -359,8 +362,9 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 				Spec: routev1.RouteSpec{
 					Host: "istio.io",
 					To: routev1.RouteTargetReference{
-						Name: "istio-ingressgateway",
-						Kind: "Service",
+						Name:   "istio-ingressgateway",
+						Kind:   "Service",
+						Weight: &routeWeight,
 					},
 				},
 			}
