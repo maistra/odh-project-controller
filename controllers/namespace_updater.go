@@ -4,37 +4,35 @@ import (
 	"context"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *OpenshiftServiceMeshReconciler) addGatewayAnnotations(ctx context.Context, ns *v1.Namespace) error {
-	if ns.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost] != "" &&
-		ns.ObjectMeta.Annotations[AnnotationPublicGatewayInternalHost] != "" &&
-		ns.ObjectMeta.Annotations[AnnotationPublicGatewayName] != "" {
+func (r *OpenshiftServiceMeshReconciler) addGatewayAnnotations(ctx context.Context, namespace *v1.Namespace) error {
+	if namespace.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost] != "" &&
+		namespace.ObjectMeta.Annotations[AnnotationPublicGatewayInternalHost] != "" &&
+		namespace.ObjectMeta.Annotations[AnnotationPublicGatewayName] != "" {
 		// If annotation is present we have nothing to do
 		return nil
 	}
 
 	routes, err := r.findIstioIngress(ctx)
 	if err != nil {
-		if !apierrs.IsNotFound(err) {
-			return err
-		}
-		// TODO rethink if we shouldn't just fail here
-		r.Log.Info("Unable to find matching istio ingress gateway. Some things might not work.")
-		return nil
+		r.Log.Error(err, "Unable to find matching istio ingress gateway.")
+
+		return err
 	}
 
-	ns.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost] = ExtractHostName(routes.Items[0].Spec.Host)
-	ns.ObjectMeta.Annotations[AnnotationPublicGatewayInternalHost] = fmt.Sprintf("%s.%s.svc.cluster.local", routes.Items[0].Spec.To.Name, getMeshNamespace())
+	namespace.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost] = ExtractHostName(routes.Items[0].Spec.Host)
+	namespace.ObjectMeta.Annotations[AnnotationPublicGatewayInternalHost] = fmt.Sprintf("%s.%s.svc.cluster.local", routes.Items[0].Spec.To.Name, getMeshNamespace())
+
 	gateway := extractGateway(routes.Items[0].ObjectMeta)
 	if gateway != "" {
-		ns.ObjectMeta.Annotations[AnnotationPublicGatewayName] = gateway
+		namespace.ObjectMeta.Annotations[AnnotationPublicGatewayName] = gateway
 	}
-	return r.Client.Update(ctx, ns)
+
+	return errors.Wrap(r.Client.Update(ctx, namespace), "failed updating namespace with annotations")
 }
 
 func extractGateway(meta metav1.ObjectMeta) string {
@@ -42,6 +40,7 @@ func extractGateway(meta metav1.ObjectMeta) string {
 	if gwName == "" {
 		return ""
 	}
+
 	gateway := gwName
 
 	gwNs := meta.Labels[LabelMaistraGatewayNamespace]

@@ -2,68 +2,77 @@ package controllers
 
 import (
 	"context"
-	_ "embed"
+	_ "embed" // needed for go:embed directive
 	"reflect"
 	"regexp"
 	"strings"
 
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 )
 
-type reconcileFunc func(ctx context.Context, ns *v1.Namespace) error
+type reconcileFunc func(ctx context.Context, namespace *v1.Namespace) error
 
-func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context, ns *v1.Namespace) error {
-	log := r.Log.WithValues("feature", "authorino", "namespace", ns.Name)
+func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context, namespace *v1.Namespace) error {
+	log := r.Log.WithValues("feature", "authorino", "namespace", namespace.Name)
 
-	desiredAuthConfig, err := r.createAuthConfig(ns, ns.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost])
+	desiredAuthConfig, err := r.createAuthConfig(namespace, namespace.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost])
 	if err != nil {
 		log.Error(err, "Failed creating AuthConfig object")
+
 		return err
 	}
-	foundAuthConfig := &authorino.AuthConfig{}
+
 	justCreated := false
+	foundAuthConfig := &authorino.AuthConfig{}
 
 	err = r.Get(ctx, types.NamespacedName{
 		Name:      desiredAuthConfig.Name,
-		Namespace: ns.Name,
+		Namespace: namespace.Name,
 	}, foundAuthConfig)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			log.Info("Creating Authorino AuthConfig")
-			// Create the AuthConfig in the Openshift cluster
+
 			err = r.Create(ctx, desiredAuthConfig)
 			if err != nil && !apierrs.IsAlreadyExists(err) {
 				log.Error(err, "Unable to create Authorino AuthConfig")
-				return err
+
+				return errors.Wrap(err, "unable to create AuthConfig")
 			}
+
 			justCreated = true
 		} else {
 			log.Error(err, "Unable to fetch the AuthConfig")
-			return err
+
+			return errors.Wrap(err, "unable to fetch AuthConfig")
 		}
 	}
 
 	// Reconcile the Authorino AuthConfig if it has been manually modified
 	if !justCreated && !CompareAuthConfigs(*desiredAuthConfig, *foundAuthConfig) {
 		log.Info("Reconciling Authorino AuthConfig")
-		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if err := r.Get(ctx, types.NamespacedName{
 				Name:      desiredAuthConfig.Name,
-				Namespace: ns.Name,
+				Namespace: namespace.Name,
 			}, foundAuthConfig); err != nil {
-				return err
+				return errors.Wrapf(err, "failed getting AuthConfig %s in namespace %s", desiredAuthConfig.Name, namespace.Name)
 			}
+
 			foundAuthConfig.Spec = desiredAuthConfig.Spec
 			foundAuthConfig.ObjectMeta.Labels = desiredAuthConfig.ObjectMeta.Labels
-			return r.Update(ctx, foundAuthConfig)
-		})
-		if err != nil {
+
+			return errors.Wrap(r.Update(ctx, foundAuthConfig), "failed updating AuthConfig")
+		}); err != nil {
 			log.Error(err, "Unable to reconcile the Authorino AuthConfig")
-			return err
+
+			return errors.Wrap(err, "unable to reconcile the Authorino AuthConfig")
 		}
 	}
 
@@ -73,7 +82,7 @@ func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context
 //go:embed template/authconfig.yaml
 var authConfigTemplate []byte
 
-func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, hosts ...string) (*authorino.AuthConfig, error) {
+func (r *OpenshiftServiceMeshReconciler) createAuthConfig(namespace *v1.Namespace, hosts ...string) (*authorino.AuthConfig, error) {
 	authHosts := make([]string, len(hosts))
 	for i := range hosts {
 		authHosts[i] = ExtractHostName(hosts[i])
@@ -84,18 +93,20 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(ns *v1.Namespace, host
 		return authConfig, err
 	}
 
-	authConfig.SetName(ns.Name + "-protection")
-	authConfig.SetNamespace(ns.Name)
+	authConfig.SetName(namespace.Name + "-protection")
+	authConfig.SetNamespace(namespace.Name)
+
 	keyValue, err := getAuthorinoLabel()
 	if err != nil {
 		return nil, err
 	}
+
 	authConfig.Labels[keyValue[0]] = keyValue[1]
 	authConfig.Spec.Hosts = authHosts
 
 	// Reflects oauth-proxy SAR settings
-	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{
-		Namespace: authorino.StaticOrDynamicValue{Value: ns.Name},
+	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{ //nolint:nosnakecase //reason external library
+		Namespace: authorino.StaticOrDynamicValue{Value: namespace.Name},
 		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
 		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
 		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
@@ -116,13 +127,16 @@ func CompareAuthConfigs(a1, a2 authorino.AuthConfig) bool {
 // If given string does not start with http(s) prefix it will be returned as is.
 func ExtractHostName(s string) string {
 	r := regexp.MustCompile(`^(https?://)`)
+
 	withoutProtocol := r.ReplaceAllString(s, "")
 	if s == withoutProtocol {
 		return s
 	}
+
 	index := strings.Index(withoutProtocol, "/")
 	if index == -1 {
 		return withoutProtocol
 	}
+
 	return withoutProtocol[:index]
 }

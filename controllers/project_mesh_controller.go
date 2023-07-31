@@ -4,13 +4,13 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/kuadrant/authorino/api/v1beta1"
-
 	"github.com/go-logr/logr"
+	"github.com/kuadrant/authorino/api/v1beta1"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/errors"
+	k8serrs "k8s.io/apimachinery/pkg/util/errors"
 	maistrav1 "maistra.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,30 +36,33 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 
 	reconcilers := []reconcileFunc{r.addGatewayAnnotations, r.reconcileMeshMember, r.reconcileAuthConfig}
 
-	ns := &v1.Namespace{}
-	err := r.Get(ctx, req.NamespacedName, ns)
-	if err != nil {
+	namespace := &v1.Namespace{}
+	if err := r.Get(ctx, req.NamespacedName, namespace); err != nil {
 		if apierrs.IsNotFound(err) {
 			log.Info("Stopping reconciliation")
+
 			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{}, err
+
+		return ctrl.Result{}, errors.Wrap(err, "failed getting namespace")
 	}
 
-	if IsReservedNamespace(ns.Name) || serviceMeshIsNotEnabled(ns.ObjectMeta) {
+	if IsReservedNamespace(namespace.Name) || serviceMeshIsNotEnabled(namespace.ObjectMeta) {
 		log.Info("Skipped")
+
 		return ctrl.Result{}, nil
 	}
 
 	var errs []error
 	for _, reconciler := range reconcilers {
-		errs = append(errs, reconciler(ctx, ns))
+		errs = append(errs, reconciler(ctx, namespace))
 	}
 
-	return ctrl.Result{}, errors.NewAggregate(errs)
+	return ctrl.Result{}, k8serrs.NewAggregate(errs)
 }
 
 func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	//nolint:wrapcheck //reason there is no point in wrapping it
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1.Namespace{}).
 		Owns(&maistrav1.ServiceMeshMember{}).
@@ -69,6 +72,6 @@ func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) erro
 
 var reservedNamespaceRegex = regexp.MustCompile(`^(openshift|istio-system)$|^(kube|openshift)-.*$`)
 
-func IsReservedNamespace(ns string) bool {
-	return reservedNamespaceRegex.MatchString(ns)
+func IsReservedNamespace(namepace string) bool {
+	return reservedNamespaceRegex.MatchString(namepace)
 }
