@@ -94,19 +94,23 @@ ifneq (, $(shell which podman))
 endif
 
 IMG ?= quay.io/maistra-dev/$(PROJECT_NAME)
-TAG ?= $(VERSION)
+# If the commit is not tagged, use "latest", otherwise use the tag name
+ifeq ($(GIT_TAG), 0)
+	TAG ?= $(VERSION)
+else
+	TAG ?= latest
+endif
 
-.PHONY: docker-image
-docker-image: ## Build container image with the manager.
+.PHONY: image-build
+image-build: ## Build container image
 	${CONTAINER_ENGINE} build --build-arg LDFLAGS="$(LDFLAGS)" . -t ${IMG}:${TAG} ${DOCKER_ARGS}
 
-.PHONY: docker-push
-docker-push: ## Push container image with the manager.
+.PHONY: image-push
+image-push: ## Push container image
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
-	${CONTAINER_ENGINE} push ${IMG}:latest
 
-.PHONY: docker-image
-image: docker-image docker-push ## Build and push docker image with the manager.
+.PHONY: image
+image: image-build image-push ## Build and push docker image with the manager.
 
 ##@ Deployment
 
