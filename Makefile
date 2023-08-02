@@ -107,7 +107,9 @@ image-build: ## Build container image
 
 .PHONY: image-push
 image-push: ## Push container image
+	${CONTAINER_ENGINE} tag ${IMG}:${TAG} ${IMG}:latest
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
+	${CONTAINER_ENGINE} push ${IMG}:latest
 
 .PHONY: image
 image: image-build image-push ## Build and push docker image with the manager.
