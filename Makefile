@@ -1,7 +1,7 @@
 include func.mk
 
 PROJECT_NAME:=odh-project-controller
-PACKAGE_NAME:=github.com/opendatahub-io/$(PROJECT_NAME)
+PACKAGE_NAME:=github.com/maistra/$(PROJECT_NAME)
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -61,7 +61,7 @@ ifneq ($(GITUNTRACKEDCHANGES),)
 	COMMIT:=$(COMMIT)-dirty
 endif
 
-VERSION?=$(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")
+VERSION?=$(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 GIT_TAG?=$(shell git describe --tags --abbrev=0 --exact-match > /dev/null 2>&1; echo $$?)
 ifneq ($(GIT_TAG),0)
 	ifeq ($(origin VERSION),file)
@@ -76,7 +76,7 @@ deps:
 	go mod download && go mod tidy
 
 .PHONY: build
-build: deps format generate go-build ## Build manager binary.
+build: tools format generate go-build ## Build manager binary.
 
 .PHONY: go-build
 go-build:
@@ -87,20 +87,32 @@ run: format generate ## Run a controller from your host.
 	go run ./main.go
 
 ##@ Container images
-CONTAINER_ENGINE ?= podman
-IMG ?= quay.io/opendatahub/$(PROJECT_NAME)
-TAG ?= $(COMMIT)
+# Prefer to use podman if not explicitly set
+CONTAINER_ENGINE ?= docker
+ifneq (, $(shell which podman))
+	CONTAINER_ENGINE = podman
+endif
 
-.PHONY: docker-image
-docker-image: ## Build container image with the manager.
+IMG ?= quay.io/maistra-dev/$(PROJECT_NAME)
+# If the commit is not tagged, use "latest", otherwise use the tag name
+ifeq ($(GIT_TAG), 0)
+	TAG ?= $(VERSION)
+else
+	TAG ?= latest
+endif
+
+.PHONY: image-build
+image-build: ## Build container image
 	${CONTAINER_ENGINE} build --build-arg LDFLAGS="$(LDFLAGS)" . -t ${IMG}:${TAG} ${DOCKER_ARGS}
 
-.PHONY: docker-push
-docker-push: ## Push container image with the manager.
+.PHONY: image-push
+image-push: ## Push container image
+	${CONTAINER_ENGINE} tag ${IMG}:${TAG} ${IMG}:latest
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
+	${CONTAINER_ENGINE} push ${IMG}:latest
 
-.PHONY: docker-image
-image: docker-image docker-push ## Build and push docker image with the manager.
+.PHONY: image
+image: image-build image-push ## Build and push docker image with the manager.
 
 ##@ Deployment
 
