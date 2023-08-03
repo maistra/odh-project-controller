@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 )
 
 const (
-	timeout  = 1 * time.Minute
+	timeout  = 10 * time.Second
 	interval = 250 * time.Millisecond
 )
 
@@ -117,14 +118,18 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 			By("ensuring no service mesh member created", func() {
 				members := &maistrav1.ServiceMeshMemberList{}
 
-				Eventually(func() error {
-					return cli.List(context.Background(), members, client.InNamespace(testNs.Name))
+				Consistently(func() bool {
+					if err := cli.List(context.Background(), members, client.InNamespace(testNs.Name)); err != nil {
+						fmt.Printf("failed ensuring no service mesh member created: %+v\n", err)
+
+						return false
+					}
+
+					return len(members.Items) == 0
 				}).
 					WithTimeout(timeout).
 					WithPolling(interval).
-					Should(Succeed())
-
-				Expect(members.Items).Should(BeEmpty())
+					Should(BeTrue())
 			})
 		})
 
@@ -300,14 +305,18 @@ var _ = When("Namespace is created", Label(labels.EvnTest), func() {
 			By("ensuring no authorization config has been created", func() {
 				authConfigs := &authorino.AuthConfigList{}
 
-				Eventually(func() error {
-					return cli.List(context.Background(), authConfigs, client.InNamespace(testNs.Name))
+				Consistently(func() bool {
+					if err := cli.List(context.Background(), authConfigs, client.InNamespace(testNs.Name)); err != nil {
+						fmt.Printf("failed ensuring no auth config created: %+v\n", err)
+
+						return false
+					}
+
+					return len(authConfigs.Items) == 0
 				}).
 					WithTimeout(timeout).
 					WithPolling(interval).
-					Should(Succeed())
-
-				Expect(authConfigs.Items).Should(BeEmpty())
+					Should(BeTrue())
 			})
 		})
 	})
