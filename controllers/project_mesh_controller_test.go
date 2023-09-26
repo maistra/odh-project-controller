@@ -26,7 +26,7 @@ const (
 	interval = 250 * time.Millisecond
 )
 
-var _ = When("Namespace is created", Label(labels.EvnTest), func() {
+var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 
 	var (
 		istioNs,

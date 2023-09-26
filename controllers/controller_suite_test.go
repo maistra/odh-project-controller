@@ -37,7 +37,7 @@ func TestController(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() {
-	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
+	if !Label(labels.EnvTest).MatchesLabelFilter(GinkgoLabelFilter()) {
 		return
 	}
 	ctx, cancel = context.WithCancel(context.TODO())
@@ -90,14 +90,14 @@ var _ = SynchronizedBeforeSuite(func() {
 	}()
 }, func() {})
 
-var _ = SynchronizedAfterSuite(func() {
-	if !Label(labels.EvnTest).MatchesLabelFilter(GinkgoLabelFilter()) {
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	if !Label(labels.EnvTest).MatchesLabelFilter(GinkgoLabelFilter()) {
 		return
 	}
 	By("Tearing down the test environment")
 	cancel()
 	Expect(envTest.Stop()).To(Succeed())
-}, func() {})
+})
 
 func loadCRDs() []*v1.CustomResourceDefinition {
 	smmYaml, err := maistramanifests.ReadManifest("maistra.io_servicemeshmembers.yaml")
