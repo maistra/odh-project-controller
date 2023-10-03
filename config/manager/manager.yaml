@@ -30,25 +30,6 @@ spec:
             - name: health
               containerPort: 8081
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: health
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: health
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          resources:
-            limits:
-              cpu: 500m
-              memory: 4Gi
-            requests:
-              cpu: 500m
-              memory: 256Mi
           env:
             - name: CONTROL_PLANE_NAME
               valueFrom:
@@ -74,3 +55,22 @@ spec:
                   name: auth-refs
                   key: AUTH_AUDIENCE
                   optional: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              memory: 4Gi
+            requests:
+              cpu: 500m
+              memory: 256Mi
