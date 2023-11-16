@@ -22,9 +22,7 @@ ARG BUILD_TARGET=build
 ARG LDFLAGS
 RUN make $BUILD_TARGET -e LDFLAGS="$LDFLAGS"
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/base:debug
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9
 WORKDIR /
 COPY --from=builder /workspace/odh-project-controller/bin/manager .
 ENTRYPOINT ["/manager"]
