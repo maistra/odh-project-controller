@@ -17,7 +17,7 @@ updates:
       - bartoszmajsak
 
   - package-ecosystem: "github-actions"
-    directory: "/" # resolved as .github/workflows
+    directory: "/"
     schedule:
       interval: "weekly"
     rebase-strategy: "disabled"
