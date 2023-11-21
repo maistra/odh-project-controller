@@ -7,6 +7,13 @@ updates:
     rebase-strategy: "disabled"
     reviewers:
       - bartoszmajsak
+    groups:
+      k8s-core:
+        dependency-type: production
+        patterns:
+          - "k8s.io/api"
+          - "k8s.io/apimachinery"
+          - "k8s.io/code-generator"        
 
   - package-ecosystem: "docker"
     directory: "/build"
