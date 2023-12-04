@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	"go.uber.org/zap/zapcore"
@@ -20,6 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -71,9 +73,9 @@ var _ = SynchronizedBeforeSuite(func() {
 	Expect(cli).NotTo(BeNil())
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             testScheme,
-		LeaderElection:     false,
-		MetricsBindAddress: "0",
+		Scheme:         testScheme,
+		LeaderElection: false,
+		Metrics:        server.Options{BindAddress: "0"},
 	})
 	Expect(err).NotTo(HaveOccurred())
 

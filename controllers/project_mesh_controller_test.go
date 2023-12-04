@@ -6,10 +6,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
-	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	openshiftv1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	maistrav1 "maistra.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 )
 
 const (
