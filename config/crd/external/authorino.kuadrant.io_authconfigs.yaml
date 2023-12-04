@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.13.0
   name: authconfigs.authorino.kuadrant.io
 spec:
   group: authorino.kuadrant.io
@@ -295,6 +295,20 @@ spec:
                             for the request to be authorized.
                           items:
                             properties:
+                              all:
+                                description: A list of pattern expressions to be evaluated
+                                  as a logical AND.
+                                items:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                type: array
+                              any:
+                                description: A list of pattern expressions to be evaluated
+                                  as a logical OR.
+                                items:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                type: array
                               operator:
                                 description: 'The binary operator to be applied to
                                   the content fetched from the authorization JSON,
@@ -642,6 +656,20 @@ spec:
                         enforced; otherwise, the config will be skipped.
                       items:
                         properties:
+                          all:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical AND.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          any:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical OR.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
                           operator:
                             description: 'The binary operator to be applied to the
                               content fetched from the authorization JSON, for comparison
@@ -846,7 +874,7 @@ spec:
                               description: OAuth2 Client ID.
                               type: string
                             clientSecretRef:
-                              description: Reference to a Kuberentes Secret key that
+                              description: Reference to a Kubernetes Secret key that
                                 stores that OAuth2 Client Secret.
                               properties:
                                 key:
@@ -925,6 +953,20 @@ spec:
                         be attempted; otherwise, the callback will be skipped.
                       items:
                         properties:
+                          all:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical AND.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          any:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical OR.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
                           operator:
                             description: 'The binary operator to be applied to the
                               content fetched from the authorization JSON, for comparison
@@ -1295,6 +1337,11 @@ spec:
                           name:
                             description: The name of the JSON property
                             type: string
+                          overwrite:
+                            default: false
+                            description: Whether the value should overwrite the value
+                              of an existing property with the same name.
+                            type: boolean
                           value:
                             description: Static value of the JSON property
                             x-kubernetes-preserve-unknown-fields: true
@@ -1470,6 +1517,20 @@ spec:
                         enforced; otherwise, the config will be skipped.
                       items:
                         properties:
+                          all:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical AND.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          any:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical OR.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
                           operator:
                             description: 'The binary operator to be applied to the
                               content fetched from the authorization JSON, for comparison
@@ -1713,7 +1774,7 @@ spec:
                               description: OAuth2 Client ID.
                               type: string
                             clientSecretRef:
-                              description: Reference to a Kuberentes Secret key that
+                              description: Reference to a Kubernetes Secret key that
                                 stores that OAuth2 Client Secret.
                               properties:
                                 key:
@@ -1827,6 +1888,20 @@ spec:
                         applied; otherwise, the config will be skipped.
                       items:
                         properties:
+                          all:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical AND.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          any:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical OR.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
                           operator:
                             description: 'The binary operator to be applied to the
                               content fetched from the authorization JSON, for comparison
@@ -1985,6 +2060,30 @@ spec:
                       description: Name of the custom response. It can be used to
                         refer to the resolved response object in other configs.
                       type: string
+                    plain:
+                      description: StaticOrDynamicValue is either a constant static
+                        string value or a config for fetching a value from a dynamic
+                        source (e.g. a path pattern of authorization JSON)
+                      properties:
+                        value:
+                          description: Static value
+                          type: string
+                        valueFrom:
+                          description: Dynamic value
+                          properties:
+                            authJSON:
+                              description: 'Selector to fetch a value from the authorization
+                                JSON. It can be any path pattern to fetch from the
+                                authorization JSON (e.g. ''context.request.http.host'')
+                                or a string template with variable placeholders that
+                                resolve to patterns (e.g. "Hello, {auth.identity.name}!").
+                                Any patterns supported by https://pkg.go.dev/github.com/tidwall/gjson
+                                can be used. The following string modifiers are available:
+                                @extract:{sep:" ",pos:0}, @replace{old:"",new:""},
+                                @case:upper|lower, @base64:encode|decode and @strip.'
+                              type: string
+                          type: object
+                      type: object
                     priority:
                       default: 0
                       description: Priority group of the config. All configs in the
@@ -1998,6 +2097,20 @@ spec:
                         config to be enforced; otherwise, the config will be skipped.
                       items:
                         properties:
+                          all:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical AND.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          any:
+                            description: A list of pattern expressions to be evaluated
+                              as a logical OR.
+                            items:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
                           operator:
                             description: 'The binary operator to be applied to the
                               content fetched from the authorization JSON, for comparison
@@ -2130,6 +2243,20 @@ spec:
                   OK.
                 items:
                   properties:
+                    all:
+                      description: A list of pattern expressions to be evaluated as
+                        a logical AND.
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                    any:
+                      description: A list of pattern expressions to be evaluated as
+                        a logical OR.
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
                     operator:
                       description: 'The binary operator to be applied to the content
                         fetched from the authorization JSON, for comparison with "value".
