@@ -1,4 +1,12 @@
 linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - blank
+      - prefix(github.com/maistra/odh-project-controller)
+      - blank
+      - dot
   govet:
     check-shadowing: true
   golint:
@@ -67,7 +75,8 @@ linters:
     - exhaustruct
     - exhaustivestruct
     - forbidigo
-    - gofmt # We use goimports and when using them both leads to contradicting errors
+    - goimports
+    - gofmt # We use gci and when using them both leads to contradicting errors
     - gofumpt
     - gomnd
     - paralleltest
