@@ -6,11 +6,9 @@ import (
 	"os"
 	"time"
 
-	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
-	"github.com/opendatahub-io/odh-project-controller/test"
 	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	openshiftv1 "github.com/openshift/api/route/v1"
@@ -199,124 +197,6 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 					Should(Succeed())
 				Expect(member.Spec.ControlPlaneRef.Name).To(Equal("minimal"))
 				Expect(member.Spec.ControlPlaneRef.Namespace).To(Equal("istio-system"))
-			})
-		})
-	})
-
-	Context("enabling external authorization", func() {
-
-		It("should configure authorization using defaults for ns belonging to the mesh", func() {
-			// given
-			testNs = &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "meshified-and-authorized-ns",
-					Annotations: map[string]string{
-						controllers.AnnotationServiceMesh: "true",
-					},
-				},
-			}
-
-			defer objectCleaner.DeleteAll(testNs)
-
-			// when
-			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
-
-			// then
-			By("creating authorization config resource", func() {
-				expectedAuthConfig := &authorino.AuthConfig{}
-
-				Expect(controllers.ConvertToStructuredResource(test.ExpectedAuthConfig, expectedAuthConfig)).To(Succeed())
-				namespacedName := types.NamespacedName{
-					Namespace: testNs.Name,
-					Name:      expectedAuthConfig.Name,
-				}
-				actualAuthConfig := &authorino.AuthConfig{}
-				Eventually(func() error {
-					return cli.Get(context.Background(), namespacedName, actualAuthConfig)
-				}).
-					WithTimeout(timeout).
-					WithPolling(interval).
-					Should(Succeed())
-
-				Expect(actualAuthConfig.Labels).To(Equal(expectedAuthConfig.Labels))
-				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
-				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
-			})
-		})
-
-		It("should configure authorization using env vars for ns belonging to the mesh", func() {
-			// given
-			testNs = &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "meshified-and-authorized-ns",
-					Annotations: map[string]string{
-						controllers.AnnotationServiceMesh: "true",
-					},
-				},
-			}
-
-			defer objectCleaner.DeleteAll(testNs)
-
-			// when
-			_ = os.Setenv(controllers.AuthorinoLabelSelector, "app=rhods")
-			defer os.Unsetenv(controllers.AuthorinoLabelSelector)
-			_ = os.Setenv(controllers.AuthAudience, "opendatahub.io,foo , bar")
-			defer os.Unsetenv(controllers.AuthAudience)
-
-			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
-
-			// then
-			By("creating authorization config resource", func() {
-				expectedAuthConfig := &authorino.AuthConfig{}
-
-				Expect(controllers.ConvertToStructuredResource(test.ExpectedAuthConfig, expectedAuthConfig)).To(Succeed())
-				namespacedName := types.NamespacedName{
-					Namespace: testNs.Name,
-					Name:      expectedAuthConfig.Name,
-				}
-				actualAuthConfig := &authorino.AuthConfig{}
-				Eventually(func() error {
-					return cli.Get(context.Background(), namespacedName, actualAuthConfig)
-				}).
-					WithTimeout(timeout).
-					WithPolling(interval).
-					Should(Succeed())
-
-				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
-				Expect(actualAuthConfig.Labels).To(HaveKeyWithValue("app", "rhods"))
-				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
-				Expect(actualAuthConfig.Spec.Identity[0].KubernetesAuth.Audiences).
-					To(And(HaveLen(3), ContainElements("opendatahub.io", "foo", "bar")))
-			})
-		})
-
-		It("should not configure authorization rules if namespace is not part of the mesh", func() {
-			// given
-			testNs = &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "not-meshified-nor-authorized-namespace",
-				},
-			}
-
-			// when
-			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
-
-			// then
-			By("ensuring no authorization config has been created", func() {
-				authConfigs := &authorino.AuthConfigList{}
-
-				Consistently(func() bool {
-					if err := cli.List(context.Background(), authConfigs, client.InNamespace(testNs.Name)); err != nil {
-						fmt.Printf("failed ensuring no auth config created: %+v\n", err)
-
-						return false
-					}
-
-					return len(authConfigs.Items) == 0
-				}).
-					WithTimeout(timeout).
-					WithPolling(interval).
-					Should(BeTrue())
 			})
 		})
 	})

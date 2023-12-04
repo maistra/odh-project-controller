@@ -30,11 +30,13 @@ type OpenshiftServiceMeshReconciler struct {
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch
 
+type reconcileFunc func(ctx context.Context, namespace *v1.Namespace) error
+
 // Reconcile ensures that the namespace has all required resources needed to be part of the Service Mesh of Open Data Hub.
 func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 
-	reconcilers := []reconcileFunc{r.addGatewayAnnotations, r.reconcileMeshMember, r.reconcileAuthConfig}
+	reconcilers := []reconcileFunc{r.addGatewayAnnotations, r.reconcileMeshMember}
 
 	namespace := &v1.Namespace{}
 	if err := r.Get(ctx, req.NamespacedName, namespace); err != nil {
