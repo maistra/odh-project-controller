@@ -13,6 +13,7 @@ import (
 	"github.com/opendatahub-io/odh-project-controller/test"
 	. "github.com/opendatahub-io/odh-project-controller/test/cluster"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
+	configv1 "github.com/openshift/api/config/v1"
 	openshiftv1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,7 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 		testNs *corev1.Namespace
 		objectCleaner *Cleaner
 		route         *openshiftv1.Route
+		ingressConfig *configv1.Ingress
 	)
 
 	BeforeEach(func() {
@@ -62,13 +64,23 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 				},
 			},
 		}
+		ingressConfig = &configv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cluster",
+			},
+			Spec: configv1.IngressSpec{
+				Domain:     "test.io",
+				AppsDomain: "apps.test.io",
+			},
+		}
 
 		Expect(cli.Create(context.Background(), istioNs)).To(Succeed())
 		Expect(cli.Create(context.Background(), route)).To(Succeed())
+		Expect(cli.Create(context.Background(), ingressConfig)).To(Succeed())
 	})
 
 	AfterEach(func() {
-		objectCleaner.DeleteAll(istioNs, route, testNs)
+		objectCleaner.DeleteAll(istioNs, ingressConfig, route, testNs)
 	})
 
 	Context("enabling service mesh", func() {
@@ -260,8 +272,6 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 			// when
 			_ = os.Setenv(controllers.AuthorinoLabelSelector, "app=rhods")
 			defer os.Unsetenv(controllers.AuthorinoLabelSelector)
-			_ = os.Setenv(controllers.AuthAudience, "opendatahub.io,foo , bar")
-			defer os.Unsetenv(controllers.AuthAudience)
 
 			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
 
@@ -285,8 +295,6 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 				Expect(actualAuthConfig.Name).To(Equal(testNs.GetName() + "-protection"))
 				Expect(actualAuthConfig.Labels).To(HaveKeyWithValue("app", "rhods"))
 				Expect(actualAuthConfig.Spec.Hosts).To(Equal(expectedAuthConfig.Spec.Hosts))
-				Expect(actualAuthConfig.Spec.Identity[0].KubernetesAuth.Audiences).
-					To(And(HaveLen(3), ContainElements("opendatahub.io", "foo", "bar")))
 			})
 		})
 

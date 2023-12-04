@@ -20,7 +20,9 @@ type reconcileFunc func(ctx context.Context, namespace *v1.Namespace) error
 func (r *OpenshiftServiceMeshReconciler) reconcileAuthConfig(ctx context.Context, namespace *v1.Namespace) error {
 	log := r.Log.WithValues("feature", "authorino", "namespace", namespace.Name)
 
-	desiredAuthConfig, err := r.createAuthConfig(namespace, namespace.ObjectMeta.Annotations[AnnotationPublicGatewayExternalHost])
+	desiredAuthConfig, err := r.createAuthConfig(namespace,
+		namespace.ObjectMeta.Annotations[AnnotationProjectModelGatewayHostPatternExternal],
+		namespace.ObjectMeta.Annotations[AnnotationProjectModelGatewayHostPatternInternal])
 	if err != nil {
 		log.Error(err, "Failed creating AuthConfig object")
 
@@ -103,16 +105,7 @@ func (r *OpenshiftServiceMeshReconciler) createAuthConfig(namespace *v1.Namespac
 
 	authConfig.Labels[keyValue[0]] = keyValue[1]
 	authConfig.Spec.Hosts = authHosts
-
-	// Reflects oauth-proxy SAR settings
-	authConfig.Spec.Authorization[0].KubernetesAuthz.ResourceAttributes = &authorino.Authorization_KubernetesAuthz_ResourceAttributes{ //nolint:nosnakecase //reason external library
-		Namespace: authorino.StaticOrDynamicValue{Value: namespace.Name},
-		Group:     authorino.StaticOrDynamicValue{Value: "kubeflow.org"},
-		Resource:  authorino.StaticOrDynamicValue{Value: "notebooks"},
-		Verb:      authorino.StaticOrDynamicValue{Value: "get"},
-	}
-
-	authConfig.Spec.Identity[0].KubernetesAuth.Audiences = getAuthAudience()
+	authConfig.Spec.Identity[0].KubernetesAuth.Audiences = []string{namespace.Name + "-api"}
 
 	return authConfig, nil
 }

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
+	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -120,8 +121,6 @@ func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (
 		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "odh-dashboard"}),
 		Namespace:     meshNamespace,
 	}); err != nil {
-		r.Log.Error(err, "Unable to find matching gateway")
-
 		return routev1.RouteList{}, errors.Wrap(err, "unable to find matching gateway")
 	}
 
@@ -135,4 +134,19 @@ func (r *OpenshiftServiceMeshReconciler) findIstioIngress(ctx context.Context) (
 	}
 
 	return routes, nil
+}
+
+func (r *OpenshiftServiceMeshReconciler) findAppDomain(ctx context.Context) (string, error) {
+	ingress := configv1.Ingress{}
+
+	err := r.Client.Get(ctx, types.NamespacedName{Name: "cluster"}, &ingress)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to find matching ingress config cluster")
+	}
+
+	if ingress.Spec.AppsDomain != "" {
+		return ingress.Spec.AppsDomain, nil
+	}
+
+	return ingress.Spec.Domain, nil
 }

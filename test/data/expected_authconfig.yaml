@@ -1,45 +1,75 @@
 apiVersion: authorino.kuadrant.io/v1beta1
 kind: AuthConfig
 metadata:
+  name: meshified-and-authorized-ns-protection
+  namespace: meshified-and-authorized-ns
   labels:
     authorino/topic: odh
-  name: meshified-and-authorized-ns-protection
 spec:
   hosts:
-    - istio.io
+    - "*.meshified-and-authorized-ns.apps.test.io"
+    - "*.meshified-and-authorized-ns.svc.cluster.local"
   identity:
-    - name: kubernetes-users
-      kubernetes:
-        audiences:
-          - https://kubernetes.default.svc
+  - name: authorized-service-accounts
+    kubernetes:
+      audiences:
+      - meshified-and-authorized-ns-protection-api
+  - name: anonymous-grpc
+    priority: 1
+    anonymous: {}
+    when:
+    - selector: context.request.http.headers.mm-vmodel-id
+      operator: matches
+      value: .+
+    extendedProperties:
+    - name: modelid
+      valueFrom:
+        authJSON: context.request.http.headers.mm-vmodel-id
+  - name: anonymous-http
+    priority: 1
+    anonymous: {}
+    when:
+    - selector: context.request.http.headers.mm-vmodel-id
+      operator: matches
+      value: ^$
+    extendedProperties:
+    - name: modelid
+      valueFrom:
+        authJSON: context.request.http.path.@extract:{"sep":"/","pos":2}
+  metadata:
+  - name: access
+    http:
+      endpoint: http://odh-model-controller-metrics-service.opendatahub.svc.cluster.local:8080/model/?ns={context.request.http.host.@extract:{"sep":".","pos":0}}&modelid={auth.identity.modelid}
+    #cache:
+    #  key:
+    #    valueFrom:
+    #      authJSON: {context.request.http.host.@extract:{"sep":".","pos":0}}-{auth.identity.modelid}
+    #  ttl: 300
+    when:
+    - selector: auth.identity.anonymous
+      operator: eq
+      value: "true"
   authorization:
-    - name: k8s-rbac
-      kubernetes:
-        resourceAttributes:
-          group:
-            value: kubeflow.org
-          name:
-            value: nb
-          namespace:
-            value: test-mesh-001
-          resource:
-            value: notebooks
-          verb:
-            value: get
-        user:
-          valueFrom:
-            authJSON: auth.identity.username
-  response:
-    - name: x-auth-data
+    - name: anonymous
+      when:
+      - selector: auth.identity.anonymous
+        operator: eq
+        value: "true"
       json:
-        properties:
-          - name: username
-            valueFrom:
-              authJSON: auth.identity.username
+        rules:
+        - selector: auth.metadata.access.anonymous
+          operator: eq
+          value: "true"
   denyWith:
     unauthenticated:
-      message:
-        value: Access denied
+      code: 302
+      headers:
+      - name: Location
+        valueFrom:
+          authJSON: http://some-service?redirect_to={context.request.http.path}
     unauthorized:
-      message:
-        value: Unauthorized
+      code: 403
+      headers:
+      - name: Location
+        valueFrom:
+          authJSON: http://some-service?redirect_to={context.request.http.path}

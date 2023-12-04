@@ -33,17 +33,6 @@ func getAuthorinoLabel() ([]string, error) {
 	return keyValue, nil
 }
 
-func getAuthAudience() []string {
-	aud := getEnvOr(AuthAudience, "https://kubernetes.default.svc")
-	audiences := strings.Split(aud, ",")
-
-	for i := range audiences {
-		audiences[i] = strings.TrimSpace(audiences[i])
-	}
-
-	return audiences
-}
-
 func getEnvOr(key, defaultValue string) string {
 	if env, defined := os.LookupEnv(key); defined {
 		return env
