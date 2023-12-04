@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -49,4 +51,23 @@ func extractGateway(meta metav1.ObjectMeta) string {
 	}
 
 	return gateway
+}
+
+// ExtractHostName strips given URL in string from http(s):// prefix and subsequent path.
+// This is useful when getting value from http headers (such as origin), as Authorino needs host only.
+// If given string does not start with http(s) prefix it will be returned as is.
+func ExtractHostName(s string) string {
+	r := regexp.MustCompile(`^(https?://)`)
+
+	withoutProtocol := r.ReplaceAllString(s, "")
+	if s == withoutProtocol {
+		return s
+	}
+
+	index := strings.Index(withoutProtocol, "/")
+	if index == -1 {
+		return withoutProtocol
+	}
+
+	return withoutProtocol[:index]
 }
