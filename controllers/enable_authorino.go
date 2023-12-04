@@ -1,14 +1,16 @@
 package controllers
 
+//nolint:gci //reason: without it will trim the whole import block because of _ "embed" import
 import (
 	"context"
-	_ "embed" // needed for go:embed directive
+	_ "embed" // needed for authorino embed
 	"reflect"
 	"regexp"
 	"strings"
 
 	authorino "github.com/kuadrant/authorino/api/v1beta1"
 	"github.com/pkg/errors"
+
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"

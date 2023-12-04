@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-project-controller/controllers"
 	"github.com/opendatahub-io/odh-project-controller/test/labels"
 	"go.uber.org/zap/zapcore"
@@ -21,6 +19,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
