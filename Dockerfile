@@ -4,15 +4,20 @@ FROM golang:${GOLANG_VERSION} as builder
 WORKDIR /workspace
 
 # Copy the Go Modules manifests
-COPY go.* /workspace/odh-project-controller/
+COPY go.* /workspace/
 
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
-RUN cd /workspace/odh-project-controller && go mod download
+RUN go mod download
 
-COPY . /workspace/odh-project-controller
+# Ensure we have tools installed in the separate layer,
+# so we don't have to re-run every time when there is just a code change
+COPY func.mk .
+COPY Makefile .
+RUN make tools
 
-WORKDIR /workspace/odh-project-controller
+# Copy the rest of the project
+COPY . /workspace/
 
 # Allows to pass other targets, such as go-build.
 # go-build simply compiles the binary assuming all the prerequisites are provided.
@@ -24,5 +29,5 @@ RUN make $BUILD_TARGET -e LDFLAGS="$LDFLAGS"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9
 WORKDIR /
-COPY --from=builder /workspace/odh-project-controller/bin/manager .
+COPY --from=builder /workspace/bin/manager .
 ENTRYPOINT ["/manager"]

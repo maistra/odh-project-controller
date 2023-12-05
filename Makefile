@@ -26,11 +26,6 @@ generate: tools ## Generates required resources for the controller to work prope
 SRC_DIRS:=./controllers ./test
 SRCS:=$(shell find ${SRC_DIRS} -name "*.go")
 
-.PHONY: format
-format: $(SRCS) ## Removes unneeded imports and formats source code
-	$(call header,"Formatting code")
-	$(LOCALBIN)/goimports -l -w -e $(SRC_DIRS) $(TEST_DIRS)
-
 .PHONY: lint
 lint: tools ## Concurrently runs a whole bunch of static analysis tools
 	$(call header,"Running a whole bunch of static analysis tools")
@@ -75,15 +70,11 @@ deps:
 	go mod download && go mod tidy
 
 .PHONY: build
-build: tools format generate go-build ## Build manager binary.
+build: lint test go-build ## Build manager binary.
 
 .PHONY: go-build
 go-build:
 	${GOBUILD} go build -ldflags "${LDFLAGS}" -o bin/manager main.go
-
-.PHONY: run
-run: format generate ## Run a controller from your host.
-	go run ./main.go
 
 ##@ Container images
 # Prefer to use podman if not explicitly set
@@ -106,9 +97,7 @@ image-build: ## Build container image
 
 .PHONY: image-push
 image-push: ## Push container image
-	${CONTAINER_ENGINE} tag ${IMG}:${TAG} ${IMG}:latest
 	${CONTAINER_ENGINE} push ${IMG}:${TAG}
-	${CONTAINER_ENGINE} push ${IMG}:latest
 
 .PHONY: image
 image: image-build image-push ## Build and push docker image with the manager.
@@ -133,7 +122,6 @@ LOCALBIN ?= $(shell pwd)/bin
 $(shell	mkdir -p $(LOCALBIN))
 
 .PHONY: tools
-tools: deps
 tools: $(LOCALBIN)/controller-gen $(LOCALBIN)/kustomize ## Installs required tools in local ./bin folder
 tools: $(LOCALBIN)/setup-envtest $(LOCALBIN)/ginkgo
 tools: $(LOCALBIN)/goimports $(LOCALBIN)/golangci-lint
