@@ -106,6 +106,39 @@ var _ = When("Namespace is created", Label(labels.EnvTest), func() {
 			// given
 			testNs = &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
+					Name: "almost-meshified-namespace",
+					Annotations: map[string]string{
+						controllers.AnnotationServiceMesh: "false",
+					},
+				},
+			}
+
+			// when
+			Expect(cli.Create(context.Background(), testNs)).To(Succeed())
+
+			// then
+			By("ensuring no service mesh member created", func() {
+				members := &maistrav1.ServiceMeshMemberList{}
+
+				Consistently(func() bool {
+					if err := cli.List(context.Background(), members, client.InNamespace(testNs.Name)); err != nil {
+						fmt.Printf("failed ensuring no service mesh member created: %+v\n", err)
+
+						return false
+					}
+
+					return len(members.Items) == 0
+				}).
+					WithTimeout(timeout).
+					WithPolling(interval).
+					Should(BeTrue())
+			})
+		})
+
+		It("should not register it in the mesh if annotation is absent", func() {
+			// given
+			testNs = &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "not-meshified-namespace",
 				},
 			}

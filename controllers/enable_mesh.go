@@ -81,7 +81,7 @@ func newServiceMeshMember(namespace *v1.Namespace) *maistrav1.ServiceMeshMember 
 	controlPlaneName := getControlPlaneName()
 	meshNamespace := getMeshNamespace()
 
-	return &maistrav1.ServiceMeshMember{
+	smm := &maistrav1.ServiceMeshMember{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default", // The name MUST be default, per the maistra docs
@@ -94,6 +94,8 @@ func newServiceMeshMember(namespace *v1.Namespace) *maistrav1.ServiceMeshMember 
 			},
 		},
 	}
+
+	return smm
 }
 
 func compareMeshMembers(m1, m2 maistrav1.ServiceMeshMember) bool {
