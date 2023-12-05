@@ -2,8 +2,18 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../default
-images:
-  - name: quay.io/opendatahub/odh-project-controller
-    newName: quay.io/opendatahub/odh-project-controller
-    newTag: latest
+  - ../rbac
+  - ../manager
+
+# Adds namespace to all resources.
+namespace: odh-project-controller-system
+
+namePrefix: odh-project-controller-
+
+commonLabels:
+  app: opendatahub-project-controller
+  app.kubernetes.io/part-of: opendatahub
+  kustomize.component: opendatahub-project-controller
+  component.opendatahub.io/name: opendatahub-project-controller
+  opendatahub.io/component: "true"
+
