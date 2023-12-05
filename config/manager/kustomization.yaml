@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - manager.yaml
 - service.yaml
+
 images:
 - name: controller
   newName: quay.io/maistra-dev/odh-project-controller
