@@ -71,17 +71,7 @@ func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) erro
 }
 
 func meshAwareNamespaces(object client.Object) bool {
-	if IsReservedNamespace(object.GetName()) {
-		return false
-	}
-
-	for annotation := range object.GetAnnotations() {
-		if annotation == AnnotationServiceMesh {
-			return true
-		}
-	}
-
-	return false
+	return !IsReservedNamespace(object.GetName()) && object.GetAnnotations()[AnnotationServiceMesh] != ""
 }
 
 var reservedNamespaceRegex = regexp.MustCompile(`^(openshift|istio-system)$|^(kube|openshift)-.*$`)
