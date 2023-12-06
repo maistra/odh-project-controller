@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // OpenshiftServiceMeshReconciler holds the controller configuration.
@@ -51,6 +49,8 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 	}
 
 	if serviceMeshIsNotEnabled(namespace.ObjectMeta) {
+		//nolint:godox //reason https://github.com/maistra/odh-project-controller/issues/65
+		// TODO handle clean-up here
 		return ctrl.Result{}, nil
 	}
 
@@ -65,17 +65,7 @@ func (r *OpenshiftServiceMeshReconciler) Reconcile(ctx context.Context, req ctrl
 func (r *OpenshiftServiceMeshReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	//nolint:wrapcheck //reason there is no point in wrapping it
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1.Namespace{}, builder.WithPredicates(predicate.NewPredicateFuncs(meshAwareNamespaces))).
+		For(&v1.Namespace{}, builder.WithPredicates(MeshAwareNamespaces())).
 		Owns(&maistrav1.ServiceMeshMember{}).
 		Complete(r)
-}
-
-func meshAwareNamespaces(object client.Object) bool {
-	return !IsReservedNamespace(object.GetName()) && object.GetAnnotations()[AnnotationServiceMesh] != ""
-}
-
-var reservedNamespaceRegex = regexp.MustCompile(`^(openshift|istio-system)$|^(kube|openshift)-.*$`)
-
-func IsReservedNamespace(namepace string) bool {
-	return reservedNamespaceRegex.MatchString(namepace)
 }
