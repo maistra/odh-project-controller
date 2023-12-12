@@ -54,7 +54,6 @@ func extractGateway(meta metav1.ObjectMeta) string {
 }
 
 // ExtractHostName strips given URL in string from http(s):// prefix and subsequent path.
-// This is useful when getting value from http headers (such as origin), as Authorino needs host only.
 // If given string does not start with http(s) prefix it will be returned as is.
 func ExtractHostName(s string) string {
 	r := regexp.MustCompile(`^(https?://)`)

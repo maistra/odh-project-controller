@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("Controller helper functions", Label(labels.Unit), func() {
 
-	When("Preparing host URL for Authorino's AuthConfig", func() {
+	When("Extracting host URL", func() {
 
 		DescribeTable("it should remove protocol prefix from provided string and path",
 			func(value, expected string) {
