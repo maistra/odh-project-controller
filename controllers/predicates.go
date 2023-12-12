@@ -35,7 +35,10 @@ func MeshAwareNamespaces() predicate.Funcs {
 }
 
 func annotationRemoved(e event.UpdateEvent, annotation string) bool {
-	return e.ObjectOld.GetAnnotations()[annotation] != "" && e.ObjectNew.GetAnnotations()[annotation] == ""
+	_, existsInOld := e.ObjectOld.GetAnnotations()[annotation]
+	_, existsInNew := e.ObjectNew.GetAnnotations()[annotation]
+
+	return existsInOld && !existsInNew
 }
 
 var reservedNamespaceRegex = regexp.MustCompile(`^(openshift|istio-system)$|^(kube|openshift)-.*$`)
