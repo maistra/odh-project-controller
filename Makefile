@@ -18,10 +18,12 @@ help: ## Display this help.
 
 ##@ Development
 
+EXTERNAL_CRDS=./config/crd/external
 .PHONY: generate
 generate: tools ## Generates required resources for the controller to work properly (see config/ folder)
 	$(LOCALBIN)/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	$(call fetch-external-crds,github.com/openshift/api,route/v1)
+	rm -rf $(EXTERNAL_CRDS)
+	$(call fetch-external-crds,github.com/openshift/api,route/v1,$(EXTERNAL_CRDS))
 
 SRC_DIRS:=./controllers ./test
 SRCS:=$(shell find ${SRC_DIRS} -name "*.go")

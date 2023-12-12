@@ -21,7 +21,7 @@ endef
 define fetch-external-crds
 GOFLAGS="-mod=readonly" $(LOCALBIN)/controller-gen crd \
 paths=$(shell go env GOPATH)/pkg/mod/$(1)@$(call go-mod-version,$(1))/$(2)/... \
-output:crd:artifacts:config=config/crd/external
+output:crd:artifacts:config=$(3)
 endef
 
 # Call this function with $(call header,"Your message") to see underscored green text
